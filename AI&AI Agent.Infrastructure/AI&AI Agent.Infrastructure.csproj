@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AI_AI_Agent.Infrastructure</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="15.0.1" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Amazon" Version="1.64.0-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.64.0-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.64.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.64.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AI&amp;AI Agent.Contract\AI&amp;AI Agent.Contract.csproj" />
+  </ItemGroup>
+
+</Project>

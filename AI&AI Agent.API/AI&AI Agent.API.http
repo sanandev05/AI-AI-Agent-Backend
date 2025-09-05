@@ -1,0 +1,6 @@
+@AI_AI_Agent.API_HostAddress = http://localhost:5216
+
+GET {{AI_AI_Agent.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
