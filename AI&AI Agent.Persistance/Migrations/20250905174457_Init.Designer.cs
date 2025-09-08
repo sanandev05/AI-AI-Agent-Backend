@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AI_AI_Agent.Persistance.Migrations
 {
     [DbContext(typeof(AIDbContext))]
-    [Migration("20250829114609_InitDB")]
-    partial class InitDB
+    [Migration("20250905174457_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,11 +27,9 @@ namespace AI_AI_Agent.Persistance.Migrations
 
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Chat", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("ChatGuid")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -56,7 +54,7 @@ namespace AI_AI_Agent.Persistance.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("ChatGuid");
 
                     b.ToTable("Chats");
                 });
@@ -69,8 +67,8 @@ namespace AI_AI_Agent.Persistance.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ChatId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("ChatId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -79,10 +77,16 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("InputToken")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<int>("Languages")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OutputToken")
                         .HasColumnType("int");
 
                     b.Property<int>("Roles")
@@ -91,7 +95,7 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.Property<DateTime>("TimeStamp")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("TokenUsed")
+                    b.Property<int>("TotalToken")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")

@@ -12,25 +12,17 @@ namespace AI_AI_Agent.API.Controllers
     [ApiController]
     public class ChatController : ControllerBase
     {
-        private IChatService _chatService;
-        private readonly IChatCompletionService _chatCompletionService;
-        private readonly Kernel _kernel;
+        private readonly IChatService _chatService;
 
-        public ChatController(IChatService chatService, IChatCompletionService chatCompletionService, Kernel kernel)
+        public ChatController(IChatService chatService)
         {
             _chatService = chatService;
-            _chatCompletionService = chatCompletionService;
-            _kernel = kernel;
         }
 
-        //[HttpPost]
-        //public Task<string> SendMessage([FromBody]ChatRequestDto request)
-        //{
-        //   return _chatService.GetNonStreamingChatMessage(request.Message,request);
-        //}
 
-        [HttpGet("stream")]
-        public async Task Stream(ChatRequestDto request)
+
+        [HttpPost("stream")]
+        public async Task StreamChat(ChatRequestDto request)
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -38,26 +30,15 @@ namespace AI_AI_Agent.API.Controllers
             {
                 Response.Headers.Add("Content-Type", "text/event-stream");
 
-                var history = new ChatHistory();
-                history.AddUserMessage(request.Message);
-                var response = _chatCompletionService.GetStreamingChatMessageContentsAsync(
-                chatHistory: history,
-                kernel: _kernel
-                                );
-
-                await foreach (var chunk in response)
+                await foreach (var chunk in _chatService.StreamChatAsync(request, userId))
                 {
-                    if (!string.IsNullOrEmpty(chunk.Content))
+                    if (!string.IsNullOrEmpty(chunk))
                     {
-                        await Response.WriteAsync($"data: {chunk.Content}\n\n");
+                        await Response.WriteAsync($"data: {chunk}\n\n");
                         await Response.Body.FlushAsync();
                     }
                 }
             }
-            else
-            {
-               await _chatService.CreateChatAsync(userId);
-            } 
         }
 
         [HttpPost("create")]
@@ -75,13 +56,19 @@ namespace AI_AI_Agent.API.Controllers
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             var chats = await _chatService.GetChatsByUserIdAsync(userId);
-            return Ok(userId);
+            return Ok(chats);
         }
 
-        [HttpGet("/{uid}")]
-        public Task GetChat([FromRoute] Guid uid)
+        [HttpGet("{uid}")]
+        public async Task<IActionResult> GetChat([FromRoute] Guid uid)
         {
-            return null;
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var chat = await _chatService.GetChatByUIdAsync(uid, userId);
+            if (chat == null)
+            {
+                return NotFound();
+            }
+            return Ok(chat);
         }
     }
 }

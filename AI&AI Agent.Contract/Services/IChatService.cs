@@ -8,6 +8,8 @@ namespace AI_AI_Agent.Contract.Services
         // public Task<string> GetStreamingChatMessage(ChatRequestDto request);
         //public Task<IEnumerable<MessageDto>> GetMessagesByChatUId(Guid uId);
         public Task<ChatDto> CreateChatAsync(string UserId);
-        public abstract Task<ChatDto> GetChatsByUserIdAsync(string UserId);
+        public Task<IEnumerable<ChatDto>> GetChatsByUserIdAsync(string UserId);
+        IAsyncEnumerable<string> StreamChatAsync(ChatRequestDto request, string userId);
+        public Task<ChatDto> GetChatByUIdAsync(Guid uId, string userId);
     }
 }

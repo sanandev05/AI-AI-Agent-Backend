@@ -12,7 +12,7 @@ namespace AI_AI_Agent.Domain.Entities
         public int InputToken { get; set; }
         public int OutputToken { get; set; }
 
-        public int ChatId { get; set; }
+        public Guid ChatId { get; set; }
 
     }
 }

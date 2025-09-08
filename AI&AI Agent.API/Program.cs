@@ -92,6 +92,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 
 
+builder.Services.AddHttpClient();
 builder.Services.AddServiceRegistration();
 builder.Services.AddRepositoryRegistration();
 builder.Services.AddExternalServiceRegistration(builder.Configuration);

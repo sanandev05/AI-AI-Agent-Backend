@@ -24,9 +24,15 @@ namespace AI_AI_Agent.Persistance.Migrations
 
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Chat", b =>
                 {
-                    b.Property<Guid>("MessageUId")
+                    b.Property<Guid>("ChatGuid")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -38,11 +44,14 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.Property<int>("TotalTokensConsumed")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("MessageUId");
+                    b.HasKey("ChatGuid");
 
                     b.ToTable("Chats");
                 });
@@ -55,10 +64,7 @@ namespace AI_AI_Agent.Persistance.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ChatId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("ChatMessageUId")
+                    b.Property<Guid>("ChatId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
@@ -94,7 +100,7 @@ namespace AI_AI_Agent.Persistance.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ChatMessageUId");
+                    b.HasIndex("ChatId");
 
                     b.ToTable("Messages");
                 });
@@ -301,7 +307,9 @@ namespace AI_AI_Agent.Persistance.Migrations
                 {
                     b.HasOne("AI_AI_Agent.Domain.Entities.Chat", null)
                         .WithMany("Messages")
-                        .HasForeignKey("ChatMessageUId");
+                        .HasForeignKey("ChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

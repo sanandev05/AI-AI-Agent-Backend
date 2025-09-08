@@ -5,6 +5,7 @@ namespace AI_AI_Agent.Contract.DTOs
 {
     public class ChatDto
     {
+        public Guid ChatGuid { get; set; }
         public string UserId { get; set; }
         public string Title { get; set; }
         public int TotalTokensConsumed { get; set; }

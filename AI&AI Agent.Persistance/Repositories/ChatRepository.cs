@@ -28,12 +28,8 @@ namespace AI_AI_Agent.Persistance.Repositories
 
         public async Task<Chat> UpdateAsync(Chat entity)
         {
-            var existing = await _dbSet.FindAsync(entity.ChatGuid);
-            if (existing == null) return null;
-
             entity.UpdatedAt = DateTime.Now;
-            _context.Entry(existing).CurrentValues.SetValues(entity);
-
+            _dbSet.Update(entity);
             await _context.SaveChangesAsync();
             return entity;
         }
