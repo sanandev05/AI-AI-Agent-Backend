@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AI_AI_Agent.Persistance.Migrations
 {
     [DbContext(typeof(AIDbContext))]
-    [Migration("20250905174457_Init")]
-    partial class Init
+    [Migration("20250921174355_ChangesOnChatEntity")]
+    partial class ChangesOnChatEntity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -41,7 +41,6 @@ namespace AI_AI_Agent.Persistance.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TotalTokensConsumed")
@@ -52,9 +51,11 @@ namespace AI_AI_Agent.Persistance.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ChatGuid");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Chats");
                 });
@@ -71,11 +72,13 @@ namespace AI_AI_Agent.Persistance.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrls")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("InputToken")
                         .HasColumnType("int");
@@ -304,6 +307,17 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Chat", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Message", b =>

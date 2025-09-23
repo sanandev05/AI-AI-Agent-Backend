@@ -31,7 +31,7 @@ namespace AI_AI_Agent.API.JWT
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(double.Parse(_config["Jwt:ExpireMinutes"])),
+                expires: DateTime.Now.AddDays(double.Parse(_config["Jwt:ExpireMinutes"])),
                 signingCredentials: creds
             );
 

@@ -2,7 +2,7 @@
 {
     public enum LanguageModel
     {
-        OpenAI,
-        Gemini
+        OpenAI =1,
+        Google =2
     }
 }

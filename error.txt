@@ -1,0 +1,78 @@
+[Backend Error Text]: data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
+
+
+error @ intercept-console-error.ts:44
+GitHubCopilotInterface.useMemo[chatAPI] @ page.tsx:930
+await in GitHubCopilotInterface.useMemo[chatAPI]
+GitHubCopilotInterface.useCallback[sendStreamingMessage] @ page.tsx:1756
+GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2007
+GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
+GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
+executeDispatch @ react-dom-client.development.js:16970
+runWithFiberInDEV @ react-dom-client.development.js:871
+processDispatchQueue @ react-dom-client.development.js:17020
+(anonymous) @ react-dom-client.development.js:17621
+batchedUpdates$1 @ react-dom-client.development.js:3311
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
+dispatchEvent @ react-dom-client.development.js:21357
+dispatchDiscreteEvent @ react-dom-client.development.js:21325
+page.tsx:939 [Full streaming error]: HTTP 500 : data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
+
+
+error @ intercept-console-error.ts:44
+GitHubCopilotInterface.useMemo[chatAPI] @ page.tsx:939
+await in GitHubCopilotInterface.useMemo[chatAPI]
+GitHubCopilotInterface.useCallback[sendStreamingMessage] @ page.tsx:1756
+GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2007
+GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
+GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
+executeDispatch @ react-dom-client.development.js:16970
+runWithFiberInDEV @ react-dom-client.development.js:871
+processDispatchQueue @ react-dom-client.development.js:17020
+(anonymous) @ react-dom-client.development.js:17621
+batchedUpdates$1 @ react-dom-client.development.js:3311
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
+dispatchEvent @ react-dom-client.development.js:21357
+dispatchDiscreteEvent @ react-dom-client.development.js:21325
+page.tsx:1075 Error in streaming: Error: Server error: data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
+
+
+    at GitHubCopilotInterface.useMemo[chatAPI] [as sendStreamingMessage] (page.tsx:954:23)
+    at async GitHubCopilotInterface.useCallback[sendStreamingMessage] (page.tsx:1756:12)
+    at async GitHubCopilotInterface.useCallback[sendMessageWithImage] (page.tsx:2007:11)
+    at async GitHubCopilotInterface.useCallback[sendMessage] (page.tsx:2042:5)
+error @ intercept-console-error.ts:44
+GitHubCopilotInterface.useMemo[chatAPI] @ page.tsx:1075
+await in GitHubCopilotInterface.useMemo[chatAPI]
+GitHubCopilotInterface.useCallback[sendStreamingMessage] @ page.tsx:1756
+GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2007
+GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
+GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
+executeDispatch @ react-dom-client.development.js:16970
+runWithFiberInDEV @ react-dom-client.development.js:871
+processDispatchQueue @ react-dom-client.development.js:17020
+(anonymous) @ react-dom-client.development.js:17621
+batchedUpdates$1 @ react-dom-client.development.js:3311
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
+dispatchEvent @ react-dom-client.development.js:21357
+dispatchDiscreteEvent @ react-dom-client.development.js:21325
+page.tsx:2019 [sendMessageWithImage] Failed Error: Server error: data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
+
+
+    at GitHubCopilotInterface.useMemo[chatAPI] [as sendStreamingMessage] (page.tsx:954:23)
+    at async GitHubCopilotInterface.useCallback[sendStreamingMessage] (page.tsx:1756:12)
+    at async GitHubCopilotInterface.useCallback[sendMessageWithImage] (page.tsx:2007:11)
+    at async GitHubCopilotInterface.useCallback[sendMessage] (page.tsx:2042:5)
+error @ intercept-console-error.ts:44
+GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2019
+await in GitHubCopilotInterface.useCallback[sendMessageWithImage]
+GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
+GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
+executeDispatch @ react-dom-client.development.js:16970
+runWithFiberInDEV @ react-dom-client.development.js:871
+processDispatchQueue @ react-dom-client.development.js:17020
+(anonymous) @ react-dom-client.development.js:17621
+batchedUpdates$1 @ react-dom-client.development.js:3311
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
+dispatchEvent @ react-dom-client.development.js:21357
+dispatchDiscreteEvent @ react-dom-client.development.js:21325

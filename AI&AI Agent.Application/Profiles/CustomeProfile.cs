@@ -9,7 +9,12 @@ namespace AI_AI_Agent.Application.Profiles
         public CustomeProfile()
         {
             CreateMap<Chat, ChatDto>().ReverseMap();
-            CreateMap<Message, MessageDto>().ReverseMap();
+            CreateMap<Message, MessageDto>()
+    .ForMember(dest => dest.ImageUrls, opt => opt.MapFrom(src =>
+        src.ImageUrls != null ? src.ImageUrls.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList() : new List<string>()))
+    .ReverseMap()
+    .ForMember(dest => dest.ImageUrls, opt => opt.MapFrom(src =>
+        src.ImageUrls != null ? string.Join(";", src.ImageUrls) : null));
         }
     }
 }

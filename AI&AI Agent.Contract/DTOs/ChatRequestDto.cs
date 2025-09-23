@@ -4,8 +4,10 @@ namespace AI_AI_Agent.Contract.DTOs
 {
     public class ChatRequestDto
     {
-        public string Message { get; set; }
         public LanguageModel Model { get; set; }
-        public string ChatId { get; set; }
+
+        public string? Message { get; set; }
+        public List<string>? ImageUrls { get; set; }
+        public string? ChatId { get; set; }
     }
 }

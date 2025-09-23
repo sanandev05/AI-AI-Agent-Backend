@@ -3,8 +3,8 @@ namespace AI_AI_Agent.Domain.Entities.Enums
 {
     public enum MessageRole
     {
-        User,
-        Assistant,
-        System
+        User=1,
+        Assistant=2,
+        System=3
     }
 }

@@ -1,0 +1,176 @@
+You are an expert .NET 8 solution generator and build engineer. Produce a fully working, general-purpose autonomous agent platform similar to Manus AI, using Semantic Kernel for planning and tool-use. Output ONLY the files listed under OUTPUT FORMAT RULES.
+
+GOAL
+Build a production-ready demo that lets a user send a natural-language job like:
+  - "Analyze Tesla revenue reports and give me a DOCX."
+  - "Summarize this 200-page PDF into a 2-page brief with citations."
+  - "Scrape the first 10 results for 'Azerbaijan tourism statistics 2024', extract tables, and export CSV + DOCX."
+  - "Use Playwright to log in to a demo site and capture a screenshot of the dashboard."
+  - "Generate a study plan for IELTS and export as PDF."
+  - "Write a C# snippet to parse JSON and run it in a sandbox; return its stdout."
+…and the agent will PLAN → CALL TOOLS → ITERATE → PRODUCE ARTIFACTS (DOCX, PDF, CSV, PNG) with logs and citations. The system must be domain-agnostic and easily extensible with new tools.
+
+STACK
+- .NET 8 (C#), Clean/Onion-ish.
+- Semantic Kernel (planner + function calling).
+- Multi-LLM model router: OpenAI (or Azure OpenAI), Gemini, Claude (configurable).
+- Tools:
+  * Web search/fetch: HttpClient + AngleSharp; optional Playwright for dynamic sites.
+  * PDF/HTML/Doc/CSV parsers: PdfPig, AngleSharp, EPPlus (Excel/CSV), Markdig (md).
+  * Exporters: DocX (Xceed.Words.NET), QuestPDF (for PDFs), CSV/JSON writers.
+  * Charts: ScottPlot (PNG).
+  * Simple code runner (C# Roslyn scripting) in a locked-down sandbox (disabled by default; enable via env flag).
+  * File store for user uploads and generated artifacts.
+- Persistence: EF Core Sqlite for jobs/artifacts/messages; file storage in ./wwwroot/exports.
+- Background jobs: Hangfire (in-memory OK).
+- Logging: Serilog.
+- Auth: NOT required for demo (JWT hooks scaffolded but off).
+- Memory (optional): local embeddings with on-disk FAISS-like store OR stub interface; keep the interface but ship a no-op implementation.
+
+CORE CONCEPTS
+- Agent = Planner (SK) + Tool Registry + Model Router + Orchestrator.
+- Plans are step graphs (ReAct-style): reason → act → observe loop with max-iterations, budget, and guardrails.
+- Tool execution is idempotent and logs inputs/outputs with truncation.
+- Every job returns reproducible artifacts + a machine-readable transcript (JSONL).
+
+FEATURES
+1) JOB API
+   - POST /api/jobs/run
+     Body:
+       {
+         "prompt": "… user goal …",
+         "constraints": { "maxIterations": 8, "budgetUsd": 0.50, "domainHints": ["finance","webscrape"] },
+         "deliverables": ["docx","pdf","csv"],
+         "inputs": [{ "type": "file", "fileId": "…" }, { "type": "text", "value": "…" }]
+       }
+     Returns { "jobId": "<guid>" }
+   - GET /api/jobs/{jobId} → status, progress %, active step, tokens & cost, links to artifacts.
+   - GET /api/files/{fileId} → stream artifact or uploaded file.
+   - POST /api/files/upload (multipart) → { fileId }
+
+2) TOOLS (all implemented as SK native plugins + prompts where needed)
+   - web.search(query) → list of {title,url,snippet}
+   - web.fetch(url) → {html,text,headers}
+   - web.playwright(actionsJson) [optional] → run a short deterministic script (navigate, click, fill, screenshot) with a strict allowlist; OFF by default unless PLAYWRIGHT_ENABLE=true
+   - file.parse({fileId|text}, type=pdf/html/csv/docx/md) → normalized blocks, tables
+   - data.extract(schemaPrompt, text) → JSON per schema (low temperature)
+   - data.tabulate(rows, cols) → CSV/Excel via EPPlus
+   - report.compose(markdown) → converts to DOCX (DocX) and/or PDF (QuestPDF)
+   - viz.chart(seriesJson, kind=line|bar|pie) → PNG via ScottPlot
+   - code.run.csharp(source) → executes in Roslyn sandbox; OFF by default unless CODE_RUN_ENABLE=true
+   - util.merge(markdownParts…) → single markdown with headings
+   - cite.collect(urls[]) → append a “Sources” section
+   Provide a ToolRegistry that auto-discovers tools via DI and exposes /api/tools.
+
+3) MODEL ROUTER
+   - Config via env: OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY
+   - Policies:
+     * classification/planning → small/cheap model
+     * long-form synthesis → quality model
+     * extraction → deterministic (temp ~0.1)
+   - Per-step token + cost guards; graceful 429 retry with jitter.
+
+4) PLANNING
+   - A generic “UniversalPlanner” SK function:
+     Input: user goal + known tools
+     Output: a numbered plan (max N steps) with tool names + arguments
+   - Orchestrator executes steps, feeds observations back to planner within ReAct loop (hard cap on iterations and tokens).
+
+5) EXPORTS
+   - Artifacts saved under ./wwwroot/exports/{jobId}/
+   - Naming: {slug}_{timestamp}.{ext}
+   - Always generate a machine-readable summary JSON: { steps[], toolsUsed[], costs, citations[] }
+
+6) SAFETY & GUARDRAILS
+   - Respect robots.txt for crawling; deny-list sensitive hosts by default.
+   - Playwright + code runner are disabled unless explicitly enabled via env.
+   - Rate-limit and redact secrets in logs.
+   - Refuse dangerous operations (exfiltration, PII scraping, auth-bypass).
+   - Max download size per file (e.g., 20 MB) and per job time limit.
+
+SOLUTION LAYOUT
+- src/
+  - Domain/
+    - Entities: Job, JobStatus, Message, Artifact, ToolInvocation, Citation, CostBreakdown
+  - Application/
+    - Interfaces: IPlanner, ITool, IToolRegistry, IModelRouter, IJobRunner, IFileStore
+    - Services: UniversalPlanner (SK), Orchestrator, JobRunner (Hangfire), ToolRegistry
+    - Models: PlanStep, Observation, DeliverableSpec, ArtifactRef
+  - Infrastructure/
+    - Llm: SemanticKernelClient (providers: OpenAI/Gemini/Anthropic)
+    - Tools: WebSearchTool, WebFetchTool, PlaywrightTool, FileParseTool, DataExtractTool, ReportComposeTool, VizChartTool, CodeRunCSharpTool, DataTabulateTool, CiteTool, UtilMergeTool
+    - Parsing: AngleSharpHtmlParser, PdfPigParser, DocxReader (optional), Csv/Excel via EPPlus
+    - Export: DocxExporter (DocX), PdfExporter (QuestPDF), CsvExporter
+    - Persistence: EF Core Sqlite (Jobs, Messages, Artifacts)
+    - Files: LocalFileStore (wwwroot/uploads, wwwroot/exports)
+    - Logging: Serilog
+    - Background: Hangfire configuration
+    - Security: RobotsTxtClient, HostAllowlist
+  - Api/
+    - Controllers: JobsController, FilesController, ToolsController
+    - Program.cs, appsettings.json
+  - Plugins/ (SK prompt templates)
+- tests/
+  - Application.Tests/ (planner loop limits, cost math, CSV writer tests)
+- OpenAPI/
+  - api.yaml
+- README.md
+- bootstrap.ps1
+
+BOOTSTRAP REQUIREMENTS
+- bootstrap.ps1 must:
+  * Create solution & projects, wire references, add NuGet packages:
+    - Microsoft.SemanticKernel
+    - AngleSharp, HtmlAgilityPack
+    - Xceed.Words.NET, QuestPDF
+    - ScottPlot
+    - UglyToad.PdfPig
+    - EPPlus
+    - Serilog, Serilog.Sinks.Console
+    - Hangfire.Core, Hangfire.AspNetCore
+    - Microsoft.EntityFrameworkCore, Microsoft.EntityFrameworkCore.Sqlite, Microsoft.EntityFrameworkCore.Design
+    - Swashbuckle.AspNetCore (optional) OR just ship api.yaml
+    - Microsoft.CodeAnalysis.CSharp.Scripting (for sandboxed code; behind env flag)
+  * Scaffold all .cs files via here-strings (valid, compilable C#).
+  * Add minimal SK prompts (planner, extractor, summarizer).
+  * Run `dotnet build`.
+  * Print next steps to run API.
+
+ENV & CONFIG
+- Required (at least one key): OPENAI_API_KEY or GEMINI_API_KEY or ANTHROPIC_API_KEY
+- Optional:
+  - MODEL_PLANNER (default: gpt-4o-mini or gemini-1.5-pro)
+  - MODEL_SYNTH (default: gpt-4o or gemini-1.5-pro)
+  - MODEL_EXTRACT (default: gpt-4o-mini or gemini-1.5-flash)
+  - PLAYWRIGHT_ENABLE=false
+  - CODE_RUN_ENABLE=false
+  - MAX_JOB_MINUTES=5
+  - MAX_DOWNLOAD_MB=20
+
+ACCEPTANCE CRITERIA
+- dotnet build succeeds on clean Windows 10/11 with .NET 8.
+- POST /api/jobs/run with "Create a 1-page PDF study plan for IELTS Listening" finishes with a PDF artifact and a JSON transcript.
+- POST /api/jobs/run with "Scrape 'Azerbaijan tourism statistics 2024' top 5 results and export a CSV of the main numeric tables" returns a CSV + DOCX summary with citations.
+- POST /api/jobs/run with "Open this public demo page and screenshot the dashboard" runs Playwright ONLY if PLAYWRIGHT_ENABLE=true and returns a PNG.
+- Tool discovery endpoint /api/tools lists at least the 10 tools above.
+- Planner never exceeds maxIterations; costs are reported per step and total.
+
+OUTPUT FORMAT RULES
+Output ONLY three files in this order, separated by clear file markers:
+
+===FILE: README.md===
+(markdown content with setup, env vars, quickstart curl examples, tool catalog, safety notes)
+
+===FILE: OpenAPI/api.yaml===
+(full OpenAPI for /api/jobs/run, /api/jobs/{id}, /api/files/{id}, /api/tools)
+
+===FILE: bootstrap.ps1===
+(PowerShell script that scaffolds the entire solution, installs NuGets, writes sources/config/prompts/tests via here-strings, builds, and prints how to run; include commented `npx playwright install` step)
+
+IMPORTANT NOTES
+- Provide REAL, compilable C# (no pseudocode).
+- Keep classes compact but runnable; prefer clarity to over-abstraction.
+- Planner/Orchestrator must form a functioning ReAct loop with ToolRegistry.
+- Default to OpenAI via OPENAI_API_KEY; if not present, fall back to GEMINI_API_KEY or ANTHROPIC_API_KEY.
+- Default to disabling risky tools unless env flags enable them.
+BEGIN NOW.

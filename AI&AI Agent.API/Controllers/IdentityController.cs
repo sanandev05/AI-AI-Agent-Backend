@@ -42,7 +42,7 @@ namespace AI_AI_Agent.API.Controllers
 
             if (result.Succeeded)
             {
-                await _signInManager.SignInAsync(user, isPersistent: input.isPersistance);
+                await _signInManager.SignInAsync(user, isPersistent: input.isPersistent);
 
                 return Ok(new
                 {
