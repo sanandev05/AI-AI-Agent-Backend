@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "apis1": {
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.ApiManagement/service/AIAIAgentAPIapi/apis/AIAIAgentAPI",
+      "type": "apis.azure"
+    },
+    "identityapp1": {
+      "connectionInfo": "App registration: aiagetnIdentity, Tenant: Default Directory (senanalonegamesgmail.onmicrosoft.com - Microsoft Entra ID)",
+      "type": "identityapp.default"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+  <RootNamespace>AI_AI_Agent.Tests</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\AI&amp;AI Agent.Application\AI&amp;AI Agent.Application.csproj" />
+    <ProjectReference Include="..\..\AI&amp;AI Agent.Domain\AI&amp;AI Agent.Domain.csproj" />
+    <ProjectReference Include="..\..\AI&amp;AI Agent.Infrastructure\AI&amp;AI Agent.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

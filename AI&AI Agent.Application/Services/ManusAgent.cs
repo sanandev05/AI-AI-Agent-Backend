@@ -1,16 +1,19 @@
-using AI_AI_Agent.Domain.Agents;
 using Microsoft.SemanticKernel;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using DomainAgent = AI_AI_Agent.Domain.Agents.IAgent;
+using DomainPlanner = AI_AI_Agent.Domain.Agents.IPlanner;
+using DomainOrchestrationPlanner = AI_AI_Agent.Domain.Agents.OrchestrationPlanner;
 
 namespace AI_AI_Agent.Application.Services
 {
-    public class ManusAgent : IAgent
+    public class ManusAgent : DomainAgent
     {
-        private readonly IPlanner _planner;
+        private readonly DomainPlanner _planner;
 
         public ManusAgent(Kernel kernel)
         {
-            _planner = new OrchestrationPlanner(kernel);
+            _planner = new DomainOrchestrationPlanner(kernel);
         }
 
         public async Task<string> AchieveGoalAsync(string goal)

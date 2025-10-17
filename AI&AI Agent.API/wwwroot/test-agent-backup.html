@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI&AI Agent Test Console</title>
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #0b1020; --edge: #1f2a44; --text: #e5e7eb; --muted: #9ca3af;
+      --accent: #3b82f6; --ok: #10b981; --soft: #0a0f1d; --chip: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  .wrap { max-width: 1400px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .card { background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 14px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    input { background: var(--soft); color: var(--text); border: 1px solid #22304a; border-radius: 8px; padding: 8px 10px; flex: 1; }
+    button { background: var(--accent); color: #081021; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; }
+    button.ghost { background: #1f2937; color: var(--text); border: 1px solid #2b364d; }
+    .toolbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 10px; }
+    .controls { display: flex; gap: 8px; align-items: center; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 12px; }
+    .status { font-size: 12px; color: var(--muted); }
+  #log { margin-top: 12px; background: var(--soft); border: 1px solid var(--edge); border-radius: 10px; height: 520px; overflow: auto; padding: 8px; }
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 18px; margin-top: 18px; }
+  @media (max-width: 1150px){ .layout { grid-template-columns: 1fr; } #planPanel { order:2; } }
+  #planPanel { background: var(--panel); border:1px solid var(--edge); border-radius:12px; padding:14px; display:flex; flex-direction:column; min-height:520px; }
+  #planSteps { list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; flex:1; overflow:auto; }
+  .stepItem { border:1px solid #22304a; background: #121b2e; border-radius:10px; padding:8px 10px; position:relative; }
+  .stepHeader { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:4px; gap:8px; }
+  .stepTitle { font-weight:600; color:#e2e8f0; flex:1; }
+  .stepStatus { font-size:11px; padding:2px 6px; border-radius:6px; text-transform:uppercase; letter-spacing:.5px; }
+  .Pending { background:#3a2e05; color:#fbbf24; border:1px solid #7c5f07; }
+  .InProgress { background:#062813; color:#22c55e; border:1px solid #154b2a; }
+  .Completed { background:#0a1b34; color:#60a5fa; border:1px solid #12356a; }
+  .Failed { background:#2b0f1f; color:#f472b6; border:1px solid #7a1749; }
+  .Skipped { background:#1f2937; color:#cbd5e1; border:1px solid #374151; }
+  .rationale { font-size:11px; color:#9ca3af; line-height:1.3; }
+  .progressWrap { margin-top:4px; }
+  .progressBar { height:8px; background:#1e293b; border:1px solid #2b364d; border-radius:6px; overflow:hidden; }
+  .progressFill { height:100%; background:linear-gradient(90deg,#2563eb,#0891b2); width:0%; transition:width .4s ease; }
+  .planMeta { font-size:12px; color:#94a3b8; margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; }
+  .noPlan { font-size:12px; color:#64748b; text-align:center; margin-top:40px; }
+  .panelTitle { font-size:14px; font-weight:600; margin:0; display:flex; align-items:center; gap:6px; }
+  .pill { background:#1e293b; color:#94a3b8; padding:2px 8px; border-radius:14px; font-size:11px; }
+    .entry { background: transparent; border-bottom: 1px dashed #24324d; padding: 8px; }
+    .entry:last-child { border-bottom: none; }
+    .ts { color: #64748b; font-size: 12px; margin-right: 8px; }
+    .tag { display: inline-block; padding: 2px 6px; border-radius: 6px; font-size: 12px; margin-right: 6px; }
+    .start { color: #22c55e; background: #062813; border: 1px solid #154b2a; }
+    .end { color: #60a5fa; background: #0a1b34; border: 1px solid #12356a; }
+    .final { color: #f472b6; background: #2b0f1f; border: 1px solid #7a1749; }
+    .info { color: #cbd5e1; background: #1f2937; border: 1px solid #374151; }
+    .step { color: #fbbf24; background: #3a2e05; border: 1px solid #7c5f07; }
+    .raw { color: #a78bfa; background: #2d1e46; border: 1px solid #5b3ea6; }
+    .file { color: #34d399; background: #052e23; border: 1px solid #0d5e49; }
+  .timeline { color: #93c5fd; background: #0b2545; border: 1px solid #1e3a8a; }
+    pre { margin: 6px 0 0; white-space: pre-wrap; }
+    details { margin-top:4px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+  <script>
+    let connection;
+    function $(id){ return document.getElementById(id); }
+    function ts(){ return new Date().toLocaleTimeString(); }
+    function append(kind, msg, obj){
+      const log = $('log');
+      const div = document.createElement('div');
+      div.className = 'entry';
+      const t = document.createElement('span'); t.className = 'ts'; t.textContent = '['+ts()+']';
+      const tag = document.createElement('span'); tag.className = 'tag ' + kind; tag.textContent = kind;
+      const text = document.createElement('span'); text.textContent = ' ' + msg;
+      div.appendChild(t); div.appendChild(tag); div.appendChild(text);
+      if (obj !== undefined){ const pre = document.createElement('pre'); pre.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2); div.appendChild(pre); }
+      log.appendChild(div); log.scrollTop = log.scrollHeight;
+    }
+
+    // --- Auth and API helpers ---
+    const state = {
+      token: localStorage.getItem('agent.jwt') || '',
+      baseUrl: window.location.origin,
+      currentChatId: ''
+    };
+    function setToken(tok){
+      state.token = tok || '';
+      localStorage.setItem('agent.jwt', state.token);
+      const jwt = $('jwt'); if (jwt) jwt.value = state.token;
+      const as = $('authStatus'); if (as){ as.textContent = state.token ? 'authorized' : 'unauthorized'; as.style.color = state.token ? '#10b981' : '#fbbf24'; }
+    }
+    function bearer(){ return state.token ? { 'Authorization': 'Bearer ' + state.token } : {}; }
+    function api(path){ return state.baseUrl.replace(/\/$/, '') + path; }
+    async function jsonFetch(path, opts={}){
+      const res = await fetch(api(path), {
+        method: opts.method || 'GET',
+        headers: { 'Content-Type': 'application/json', ...bearer(), ...(opts.headers||{}) },
+        body: opts.body ? JSON.stringify(opts.body) : undefined
+      });
+      const text = await res.text();
+      let data; try{ data = text ? JSON.parse(text) : null; }catch{ data = text; }
+      if (!res.ok){ append('info', `HTTP ${res.status} ${res.statusText}`, data); throw new Error('Request failed'); }
+      return data;
+    }
+    async function sseFetch(path, body){
+      append('info', 'SSE start ' + path);
+      const res = await fetch(api(path), {
+        method: 'POST',
+        headers: { 'Accept': 'text/event-stream', 'Content-Type': 'application/json', ...bearer() },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok || !res.body){ append('info', `SSE failed ${res.status}`); return; }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true){
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) >= 0){
+          const raw = buffer.slice(0, idx).trim(); buffer = buffer.slice(idx+2);
+          if (!raw.startsWith('data:')) continue;
+          const payload = raw.slice(5).trim();
+          try{
+            const j = JSON.parse(payload);
+            const kind = j.type === 'error' ? 'end' : (j.type === 'usage' ? 'info' : 'sse');
+            append(kind, 'sse', j);
+            if (j.type === 'done') append('final', 'stream:done');
+          }catch{
+            append('sse', 'sse:text', payload);
+          }
+        }
+      }
+      append('info', 'SSE closed');
+    }
+
+    let currentPlan = null;
+    function renderPlan(){
+      const container = $('planSteps');
+      const meta = $('planMeta');
+      if(!currentPlan){ container.innerHTML = '<div class="noPlan">No plan yet</div>'; meta.textContent=''; $('progressFill').style.width='0%'; return; }
+      const steps = currentPlan.steps || currentPlan.Steps || [];
+      if(steps.length === 0){ container.innerHTML = '<div class="noPlan">Empty plan</div>'; meta.textContent=''; $('progressFill').style.width='0%'; return; }
+      container.innerHTML = '';
+      let completed = 0;
+      steps.forEach(s => { if((s.status||s.Status)==='Completed') completed++; });
+      const pct = Math.round((completed/steps.length)*100);
+      $('progressFill').style.width = pct+'%';
+      meta.innerHTML = `<span>${steps.length} steps</span><span>${completed} completed</span><span>${pct}% done</span>`;
+      steps.forEach(s => {
+        const st = s.status || s.Status;
+        const li = document.createElement('li'); li.className='stepItem';
+        li.innerHTML = `<div class="stepHeader"><span class="stepTitle">#${s.id || s.Id}: ${(s.action||s.Action||'').replace(/</g,'&lt;')}</span>`+
+          `<span class="stepStatus ${st}">${st}</span></div>`+
+          `<div class="rationale">${(s.rationale||s.Rationale||'').replace(/</g,'&lt;') || '<em>No rationale</em>'}</div>`;
+        container.appendChild(li);
+      });
+    }
+    async function connect(){
+      const chatId = $('chatId').value.trim();
+      if (!chatId){ alert('Enter a chatId (GUID)'); return; }
+      const baseUrl = window.location.origin;
+      if (connection){ try{ await connection.stop(); }catch{} }
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl(baseUrl + '/hubs/agent-events', { accessTokenFactory: () => state.token })
+        .withAutomaticReconnect()
+        .build();
+      connection.on('tool:start', e => append('start', `tool:start (${e?.tool ?? e?.toolName ?? ''})`, e));
+      connection.on('tool:end', e => append('end', `tool:end (${e?.tool ?? e?.toolName ?? ''})`, e));
+      connection.on('final:answer', e => append('final', 'final:answer', e));
+      connection.on('step:start', e => append('step', `step:start (step ${e?.step})`, e));
+      connection.on('raw:model', e => {
+        // Collapse large raw output using <details>
+        const payload = { ...e };
+        const text = typeof e?.rawText === 'string' ? e.rawText : '';
+        payload.rawText = undefined;
+        append('raw', 'raw:model', payload);
+        if (text) {
+          const log = document.getElementById('log');
+          const last = log.lastElementChild;
+          const det = document.createElement('details');
+            const sum = document.createElement('summary'); sum.textContent = 'model output';
+            const pre = document.createElement('pre'); pre.textContent = text;
+            det.appendChild(sum); det.appendChild(pre);
+            last.appendChild(det);
+        }
+      });
+      connection.on('file:created', e => {
+        append('file', `file:created (${e?.fileName})`, e);
+      });
+      connection.on('plan:created', e => {
+        currentPlan = e.plan || e;
+        append('info', 'plan:created');
+        renderPlan();
+      });
+      connection.on('plan:updated', e => {
+        currentPlan = e.plan || e;
+        append('info', 'plan:updated');
+        renderPlan();
+      });
+      connection.on('timeline:log', e => {
+        const kind = (e?.kind||'').toLowerCase();
+        const label = kind ? `timeline:${kind}` : 'timeline';
+        append('timeline', label, e);
+      });
+      connection.onreconnected(() => append('info','[reconnected]'));
+      connection.onclose(() => append('info','[closed]'));
+      await connection.start();
+      await connection.invoke('SubscribeToChat', chatId);
+      $('status').textContent = 'connected'; $('status').style.color = '#10b981';
+      append('info', 'Subscribed to ' + chatId);
+    }
+    async function disconnect(){ if (connection){ try{ await connection.stop(); }catch{} } $('status').textContent = 'disconnected'; $('status').style.color = '#9ca3af'; append('info','Disconnected'); }
+    function clearLog(){ $('log').innerHTML = ''; }
+
+    // --- Auth & identity ---
+    async function register(){
+      const email = $('email')?.value?.trim(); const password = $('password')?.value;
+      if(!email||!password){ alert('Enter email & password'); return; }
+      const res = await jsonFetch('/api/identity/register', { method:'POST', body:{ email, password, isPersistent:false } });
+      append('info','registered', res);
+    }
+    async function login(){
+      const email = $('email')?.value?.trim(); const password = $('password')?.value;
+      if(!email||!password){ alert('Enter email & password'); return; }
+      const res = await jsonFetch('/api/identity/login', { method:'POST', body:{ email, password } });
+      setToken(res?.token || ''); append('info','logged-in'); await me();
+    }
+    async function me(){ const res = await jsonFetch('/api/identity/me'); append('info','me', res); }
+
+    // --- Chat management ---
+    async function chatsList(){ const res = await jsonFetch('/api/chat/list'); append('info','chats', res); renderChats(res); }
+    function renderChats(chats){ const sel = $('chats'); if(!sel) return; sel.innerHTML=''; (chats||[]).forEach(c=>{ const id=c.chatGuid||c.ChatGuid; const o=document.createElement('option'); o.value=id; o.textContent=(c.title||c.Title||'(untitled)')+` [${id}]`; sel.appendChild(o); }); }
+    async function chatCreate(){ const res = await jsonFetch('/api/chat/create', { method:'POST' }); append('info','chat created', res); const id=res.chatGuid||res.ChatGuid; if(id){ $('chatId').value=id; state.currentChatId=id; } await chatsList(); }
+    async function chatSelect(){ const gid = $('chats')?.value; if(!gid) return; $('chatId').value = gid; state.currentChatId = gid; append('info','chat selected', { chatId: gid }); }
+    async function chatRename(){ const gid=$('chatId').value.trim(); const title=$('newTitle').value.trim(); if(!gid||!title) return; await jsonFetch(`/api/chat/${gid}/rename`, { method:'PUT', body:{ newTitle: title } }); append('info','chat renamed', { chatId: gid, title }); await chatsList(); }
+    async function chatDelete(){ const gid=$('chatId').value.trim(); if(!gid) return; await jsonFetch(`/api/chat/${gid}`, { method:'DELETE' }); append('info','chat deleted', { chatId: gid }); await chatsList(); }
+
+    // --- Streaming ---
+    async function streamChat(){ const gid=$('chatId').value.trim(); if(!gid) return alert('No chatId'); const message=$('userMsg').value; const model=$('model').value; await sseFetch('/api/chat/stream', { chatId: gid, message, model }); }
+    async function streamSearch(){ const gid=$('chatId').value.trim(); if(!gid) return alert('No chatId'); const query=$('searchQuery').value; await sseFetch('/api/chat/web-search', { chatId: gid, query }); }
+
+    // --- Agent ---
+    async function agentRun(){ const gid=$('chatId').value.trim(); if(!gid) return alert('No chatId'); const prompt=$('agentPrompt').value; const res = await jsonFetch(`/api/agent/chat/${gid}`, { method:'POST', body:{ prompt } }); append('info','agent started', res); }
+    async function agentCancel(){ const gid=$('chatId').value.trim(); if(!gid) return alert('No chatId'); const res = await jsonFetch(`/api/agent/chat/${gid}/cancel`, { method:'POST' }); append('info','agent cancel', res); }
+
+    // --- Files & approvals ---
+    async function filesList(){ const res = await jsonFetch('/api/files'); renderFiles(res); append('info','files listed', res); }
+    function renderFiles(files){ const tbl=$('files'); if(!tbl) return; tbl.innerHTML=''; (files||[]).forEach(f=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${f.name}</td><td>${Math.round((f.size/1024)*10)/10} KB</td><td>${new Date(f.createdUtc).toLocaleString()}</td><td><a href="${f.downloadUrl}" target="_blank">download</a></td><td><button onclick="fileDelete('${f.name.replace(/'/g,"\\'")}')">Delete</button></td>`; tbl.appendChild(tr); }); }
+    async function fileDelete(name){ await jsonFetch(`/api/files/${encodeURIComponent(name)}`, { method:'DELETE' }); append('info','file deleted', { name }); await filesList(); }
+    async function approvalsList(){ const status=$('approvalStatus').value; const q = status ? `?status=${status}` : ''; const res = await jsonFetch('/api/approvals'+q); renderApprovals(res); append('info','approvals', res); }
+    function renderApprovals(items){ const tbl=$('approvals'); if(!tbl) return; tbl.innerHTML=''; (items||[]).forEach(x=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${x.id}</td><td>${x.kind}</td><td>${x.summary||''}</td><td>${x.status}</td><td><button onclick="approve('${x.id}')">Approve</button> <button onclick="deny('${x.id}')">Deny</button></td>`; tbl.appendChild(tr); }); }
+    async function approve(id){ const res = await jsonFetch(`/api/approvals/${id}/approve`, { method:'POST' }); append('info','approved', res); await approvalsList(); }
+    async function deny(id){ const res = await jsonFetch(`/api/approvals/${id}/deny`, { method:'POST' }); append('info','denied', res); await approvalsList(); }
+
+    // --- Upload image ---
+    async function uploadImage(){ const file = $('imgFile').files[0]; if(!file) return; const fd = new FormData(); fd.append('file', file); const res = await fetch(api('/api/chat/upload-image'), { method:'POST', headers: { ...bearer() }, body: fd }); const data = await res.json(); append('info','image uploaded', data); $('imageUrl').value = data.imageUrl || ''; }
+
+    // --- Presets ---
+    function presetPrompt(text){ $('agentPrompt').value = text; }
+    function presetChat(text){ $('userMsg').value = text; }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>AI&AI Agent Test Console</h1>
+
+    <!-- Auth -->
+    <div class="card" style="margin-bottom:12px;">
+      <h2 class="panelTitle">Authentication <span class="pill">JWT</span></h2>
+      <div class="row" style="margin-top:8px;">
+        <input id="email" placeholder="email" style="max-width:260px;"/>
+        <input id="password" placeholder="password" type="password" style="max-width:200px;"/>
+        <button onclick="register()">Register</button>
+        <button onclick="login()">Login</button>
+        <span class="badge">Auth: <span id="authStatus">unauthorized</span></span>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input id="jwt" placeholder="JWT token" value=""/>
+        <button class="ghost" onclick="setToken($('jwt').value)">Use Token</button>
+        <button class="ghost" onclick="me()">Who am I?</button>
+      </div>
+    </div>
+
+    <!-- Chat management -->
+    <div class="card" style="margin-bottom:12px;">
+      <h2 class="panelTitle">Chat Management</h2>
+      <div class="row" style="margin-top:8px;">
+        <button onclick="chatCreate()">Create Chat</button>
+        <button class="ghost" onclick="chatsList()">List Chats</button>
+        <select id="chats" style="min-width:420px;" onchange="chatSelect()"></select>
+        <input id="newTitle" placeholder="New title" style="max-width:220px;"/>
+        <button class="ghost" onclick="chatRename()">Rename</button>
+        <button class="ghost" onclick="chatDelete()">Delete</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <input id="chatId" placeholder="Enter chatId (GUID)" />
+        <button onclick="connect()">Connect</button>
+        <button class="ghost" onclick="disconnect()">Disconnect</button>
+        <span class="badge">Status: <span id="status">disconnected</span></span>
+        <button class="ghost" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="layout">
+        <div id="planPanel">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <h2 class="panelTitle">Plan <span class="pill" id="planStatePill">live</span></h2>
+          </div>
+          <div class="progressWrap"><div class="progressBar"><div id="progressFill" class="progressFill"></div></div></div>
+          <div class="planMeta" id="planMeta"></div>
+          <ul id="planSteps"></ul>
+        </div>
+        <div id="log" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- Streaming and Agent Controls -->
+    <div class="card" style="margin-top:12px;">
+      <h2 class="panelTitle">Streaming & Agent</h2>
+      <div class="row" style="margin-top:8px;">
+        <input id="userMsg" placeholder="Chat message for SSE stream" />
+        <input id="model" placeholder="Model (optional)" style="max-width:180px;"/>
+        <button onclick="streamChat()">Stream Chat</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input id="searchQuery" placeholder="Web search query for SSE" />
+        <button class="ghost" onclick="streamSearch()">Stream Web Search</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input id="agentPrompt" placeholder="Agent goal/prompt (tools will run)" />
+        <button onclick="agentRun()">Agent Run</button>
+        <button class="ghost" onclick="agentCancel()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Files / Approvals -->
+    <div class="card" style="margin-top:12px;">
+      <h2 class="panelTitle">Artifacts & Approvals</h2>
+      <div class="row" style="margin-top:8px;">
+        <button onclick="filesList()">Refresh Files</button>
+      </div>
+      <table style="width:100%; font-size:13px; margin-top:8px; border-collapse:collapse;">
+        <thead><tr><th style="text-align:left;">Name</th><th>Size</th><th>Created</th><th>Download</th><th>Delete</th></tr></thead>
+        <tbody id="files"></tbody>
+      </table>
+      <div class="row" style="margin-top:12px;">
+        <select id="approvalStatus" style="max-width:180px;">
+          <option value="">All</option>
+          <option>Pending</option>
+          <option>Approved</option>
+          <option>Denied</option>
+        </select>
+        <button class="ghost" onclick="approvalsList()">List Approvals</button>
+      </div>
+      <table style="width:100%; font-size:13px; margin-top:8px; border-collapse:collapse;">
+        <thead><tr><th style="text-align:left;">Id</th><th>Kind</th><th>Summary</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="approvals"></tbody>
+      </table>
+    </div>
+
+    <!-- Image Upload -->
+    <div class="card" style="margin-top:12px;">
+      <h2 class="panelTitle">Upload Image (for vision chats)</h2>
+      <div class="row" style="margin-top:8px;">
+        <input type="file" id="imgFile" accept="image/*" />
+        <button onclick="uploadImage()">Upload</button>
+        <input id="imageUrl" placeholder="Uploaded image URL" />
+      </div>
+    </div>
+
+    <!-- Preset Scenarios -->
+    <div class="card" style="margin-top:12px; margin-bottom:24px;">
+      <h2 class="panelTitle">Preset Scenarios</h2>
+      <div class="row" style="margin-top:8px;">
+        <button class="ghost" onclick="presetPrompt('Research PLC basics from 3 reputable sources; create a DOCX summary with citations.')">Research + DOCX</button>
+        <button class="ghost" onclick="presetPrompt('Analyze the attached CSV/Excel data for trends and anomalies; create a PNG chart and a PDF summary.')">DataAnalyze + Chart + PDF</button>
+        <button class="ghost" onclick="presetPrompt('Compare iPhone 15 vs Samsung Galaxy S24 prices and ratings from 2-3 sites and summarize tiers.')">ProductCompare</button>
+        <button class="ghost" onclick="presetPrompt('Create a calendar event for a meeting tomorrow 15:00-16:00 UTC, then list calendar files.')">CalendarCreate/List</button>
+        <button class="ghost" onclick="presetPrompt('Draft an email to purchase the premium plan; request approval and then send after approval.')">EmailDraft/Send (Approval)</button>
+        <button class="ghost" onclick="presetPrompt('Translate the following text to Spanish: Hello, how are you?')">Translate</button>
+        <button class="ghost" onclick="presetChat('Show me the latest Tesla revenue; generate a PNG bar chart of the past 4 quarters.')">Stream Chat (chart)</button>
+      </div>
+      <p class="status" style="margin-top:6px;">Use “Agent Run” to execute preset prompts end-to-end (tools run, SignalR emits plan/tool/file events). Use “Stream Chat” for direct chat streaming tests.</p>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => { setToken(state.token); });
+  </script>
+</body>
+</html>

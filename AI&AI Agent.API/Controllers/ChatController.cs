@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace AI_AI_Agent.API.Controllers
 {
@@ -85,7 +87,8 @@ namespace AI_AI_Agent.API.Controllers
             ChatRequestDto request,
             CancellationToken cancellationToken = default)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 await WriteSseErrorAsync("Unauthorized", 401, cancellationToken);
@@ -97,11 +100,25 @@ namespace AI_AI_Agent.API.Controllers
                 await WriteSseErrorAsync("ChatId is required.", 400, cancellationToken);
                 return;
             }
+            if (string.IsNullOrWhiteSpace(request.Message) && (request.ImageUrls == null || request.ImageUrls.Count == 0))
+            {
+                await WriteSseErrorAsync("Message or at least one imageUrl is required.", 400, cancellationToken);
+                return;
+            }
 
             try
             {
                 var stream = _chatService.StreamChatAsync(request, userId);
                 await StreamSseAsync(stream, cancellationToken);
+            }
+            catch (HttpRequestException httpEx)
+            {
+                var message = httpEx.Message;
+                if (httpEx.StatusCode.HasValue && (int)httpEx.StatusCode.Value == 403)
+                {
+                    message = "Gemini returned 403 Forbidden. Check Google:ApiKey, ensure billing and model access are enabled, or pick 'Google (Gemini) → Gemini 1.5 Flash'. Details: " + httpEx.Message;
+                }
+                await WriteSseErrorAsync("Upstream LLM error (HTTP): " + message, 502, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -116,7 +133,8 @@ namespace AI_AI_Agent.API.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> CreateChat()
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
             var chat = await _chatService.CreateChatAsync(userId);
@@ -126,7 +144,8 @@ namespace AI_AI_Agent.API.Controllers
         [HttpGet("list")]
         public async Task<IActionResult> GetChats()
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
             var chats = await _chatService.GetChatsByUserIdAsync(userId);
@@ -136,7 +155,8 @@ namespace AI_AI_Agent.API.Controllers
         [HttpGet("{uid}")]
         public async Task<IActionResult> GetChat([FromRoute] Guid uid)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
             var chat = await _chatService.GetChatByUIdAsync(uid, userId);
@@ -150,7 +170,8 @@ namespace AI_AI_Agent.API.Controllers
         [HttpDelete("{uid}")]
         public async Task<IActionResult> DeleteChat([FromRoute] Guid uid)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
             var success = await _chatService.DeleteChatAsync(uid, userId);
@@ -167,6 +188,10 @@ namespace AI_AI_Agent.API.Controllers
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
+            if (renameDto == null || string.IsNullOrWhiteSpace(renameDto.NewTitle))
+            {
+                return BadRequest(new { success = false, message = "New title is required." });
+            }
             var success = await _chatService.RenameChatAsync(uid, renameDto.NewTitle, userId);
             if (!success)
             {
@@ -178,7 +203,8 @@ namespace AI_AI_Agent.API.Controllers
         [HttpPost("web-search")]
         public async Task StreamWebSearch(WebSearchRequestDto request, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 await WriteSseErrorAsync("Unauthorized", 401, cancellationToken);

@@ -5,10 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>AI_AI_Agent.API</RootNamespace>
+    <UserSecretsId>196a8200-1cc8-46b1-8f81-e330a9fb47b8</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19">
@@ -16,13 +18,18 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.19" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="2.19.1" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="2.19.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.65.0-alpha" />
+    <PackageReference Include="Tesseract" Version="5.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AI&amp;AI Agent.Application\AI&amp;AI Agent.Application.csproj" />
     <ProjectReference Include="..\AI&amp;AI Agent.Infrastructure\AI&amp;AI Agent.Infrastructure.csproj" />
     <ProjectReference Include="..\AI&amp;AI Agent.Persistance\AI&amp;AI Agent.Persistance.csproj" />
+    <ProjectReference Include="..\AI&amp;AI Agent.Contract\AI&amp;AI Agent.Contract.csproj" />
   </ItemGroup>
 
 </Project>

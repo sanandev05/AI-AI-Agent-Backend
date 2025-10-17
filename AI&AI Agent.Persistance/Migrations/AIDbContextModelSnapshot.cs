@@ -22,6 +22,50 @@ namespace AI_AI_Agent.Persistance.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Artifact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RunId");
+
+                    b.ToTable("Artifacts");
+                });
+
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Chat", b =>
                 {
                     b.Property<Guid>("ChatGuid")
@@ -55,6 +99,39 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Chats");
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Embedding", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MessageId1")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Vector")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId1");
+
+                    b.ToTable("Embedding");
                 });
 
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Message", b =>
@@ -106,6 +183,144 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.HasIndex("ChatId");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Run", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PlanJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("TotalTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Runs");
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.StepLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PayloadJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("StepId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RunId", "CreatedAt");
+
+                    b.ToTable("StepLogs");
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.ToolRun", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CompletionTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTimeOffset>("EndedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsError")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MessageId1")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Output")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PromptTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ToolInput")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ToolName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId1");
+
+                    b.ToTable("ToolRun");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -306,6 +521,17 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Artifact", b =>
+                {
+                    b.HasOne("AI_AI_Agent.Domain.Entities.Run", "Run")
+                        .WithMany("Artifacts")
+                        .HasForeignKey("RunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Run");
+                });
+
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Chat", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
@@ -317,6 +543,17 @@ namespace AI_AI_Agent.Persistance.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Embedding", b =>
+                {
+                    b.HasOne("AI_AI_Agent.Domain.Entities.Message", "Message")
+                        .WithMany("Embeddings")
+                        .HasForeignKey("MessageId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+                });
+
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Message", b =>
                 {
                     b.HasOne("AI_AI_Agent.Domain.Entities.Chat", null)
@@ -324,6 +561,28 @@ namespace AI_AI_Agent.Persistance.Migrations
                         .HasForeignKey("ChatId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.StepLog", b =>
+                {
+                    b.HasOne("AI_AI_Agent.Domain.Entities.Run", "Run")
+                        .WithMany("StepLogs")
+                        .HasForeignKey("RunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Run");
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.ToolRun", b =>
+                {
+                    b.HasOne("AI_AI_Agent.Domain.Entities.Message", "Message")
+                        .WithMany("ToolRuns")
+                        .HasForeignKey("MessageId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -380,6 +639,20 @@ namespace AI_AI_Agent.Persistance.Migrations
             modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Chat", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Message", b =>
+                {
+                    b.Navigation("Embeddings");
+
+                    b.Navigation("ToolRuns");
+                });
+
+            modelBuilder.Entity("AI_AI_Agent.Domain.Entities.Run", b =>
+                {
+                    b.Navigation("Artifacts");
+
+                    b.Navigation("StepLogs");
                 });
 #pragma warning restore 612, 618
         }

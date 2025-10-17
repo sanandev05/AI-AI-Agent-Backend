@@ -10,9 +10,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
-    <PackageReference Include="Microsoft.Playwright" Version="1.55.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.64.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.64.0-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.65.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.65.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Memory" Version="1.65.0-alpha" />
+    <PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.2.2" />
   </ItemGroup>
 
 </Project>

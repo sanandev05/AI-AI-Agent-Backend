@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
+using AI_AI_Agent.Domain.Helpers;
+// using AI_AI_Agent.Infrastructure.Services; // no direct Anthropic usage
 
 namespace AI_AI_Agent.Application.Services
 {
@@ -79,10 +81,85 @@ namespace AI_AI_Agent.Application.Services
 
         public async IAsyncEnumerable<string> StreamChatAsync(ChatRequestDto request, string userId)
         {
-            var chatCompletionService = _kernel.Services.GetRequiredKeyedService<IChatCompletionService>(request.Model.ToString());
+            // Resolve chat completion service:
+            // 1) If a specific ModelKey is provided, use keyed service by that exact id
+            // 2) Else if Model string is provided, try it as a keyed id first; if not found, treat it as provider name
+            // 3) Else if Provider string is provided, try as keyed service
+            // 4) Else fallback to provider by numeric alias ("1"=OpenAI, "2"=Google)
+            // 5) Else fallback to default registered service
+            IChatCompletionService? chatCompletionService = null;
+            string? selectedServiceId = null;
+            if (!string.IsNullOrWhiteSpace(request.ModelKey))
+            {
+                try { chatCompletionService = _kernel.Services.GetRequiredKeyedService<IChatCompletionService>(request.ModelKey!); selectedServiceId = request.ModelKey; } catch { }
+            }
+            if (chatCompletionService is null && !string.IsNullOrWhiteSpace(request.Model))
+            {
+                var modelPref = request.Model.Trim();
+                // Try as an exact keyed model id (e.g., gpt-4o, gemini-2.5-flash)
+                try { chatCompletionService = _kernel.Services.GetRequiredKeyedService<IChatCompletionService>(modelPref); selectedServiceId = modelPref; }
+                catch { /* ignore */ }
+                // If not found, try as provider name
+                if (chatCompletionService is null)
+                {
+                    try { chatCompletionService = _kernel.Services.GetRequiredKeyedService<IChatCompletionService>(NormalizeProvider(modelPref)); selectedServiceId = NormalizeProvider(modelPref); } catch { }
+                }
+            }
+            if (chatCompletionService is null && !string.IsNullOrWhiteSpace(request.Provider))
+            {
+                try { chatCompletionService = _kernel.Services.GetRequiredKeyedService<IChatCompletionService>(request.Provider!.Trim()); selectedServiceId = request.Provider!.Trim(); } catch { }
+            }
+            if (chatCompletionService is null)
+            {
+                try
+                {
+                    // Back-compat: numeric enum alias where 1=OpenAI, 2=Google
+                    var alias = (request.Model ?? string.Empty).Trim();
+                    var key = alias switch { "1" => "OpenAI", "2" => "Google", _ => string.Empty };
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        chatCompletionService = _kernel.Services.GetRequiredKeyedService<IChatCompletionService>(key);
+                        selectedServiceId = key;
+                    }
+                }
+                catch { /* will fallback below */ }
+            }
+            if (chatCompletionService is null)
+            {
+                chatCompletionService = _kernel.Services.GetService<IChatCompletionService>();
+            }
+            if (chatCompletionService is null)
+            {
+                _logger.LogError("No chat completion service is configured. Using echo fallback for development.");
+                // Dev-only fallback: stream back the user's message with a prefix
+                var echo = $"[dev-fallback] {request.Message}";
+                foreach (var ch in echo.Chunk(32))
+                {
+                    yield return new string(ch);
+                    await Task.Delay(10);
+                }
+                yield return JsonSerializer.Serialize(new { type = "usage", data = new { promptTokens = 0, completionTokens = 0, totalTokens = 0 } });
+                yield break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedServiceId))
+            {
+                _logger.LogInformation("Using chat completion serviceId: {ServiceId}", selectedServiceId);
+            }
 
             // 1. Get Chat and create the in-memory message for the current user turn
-            var chat = await _chatRepo.GetByIdAsync(Guid.Parse(request.ChatId), c => c.Messages);
+            if (!Guid.TryParse(request.ChatId, out var chatGuid))
+            {
+                _logger.LogWarning("StreamChatAsync: invalid ChatId format {ChatId}", request.ChatId);
+                yield return JsonSerializer.Serialize(new { type = "error", data = "Invalid ChatId." });
+                yield break;
+            }
+            var chat = await _chatRepo.GetByIdAsync(chatGuid, c => c.Messages);
+            if (chat == null || chat.UserId != userId)
+            {
+                yield return JsonSerializer.Serialize(new { type = "error", data = "Chat not found or access denied." });
+                yield break;
+            }
             var userMessage = new Message
             {
                 Content = request.Message,
@@ -241,7 +318,8 @@ namespace AI_AI_Agent.Application.Services
             await _messageService.AddAsync(_mapper.Map<MessageDto>(userMessage));
 
             // 4. Stream AI response and capture final token metadata
-            var fullResponse = new System.Text.StringBuilder();
+            // Use StreamTextAssembler to eliminate duplicate chunks automatically
+            var textAssembler = new StreamTextAssembler();
             var response = chatCompletionService.GetStreamingChatMessageContentsAsync(history, kernel: _kernel);
             int promptTokens = 0;
             int completionTokens = 0;
@@ -252,8 +330,11 @@ namespace AI_AI_Agent.Application.Services
             {
                 if (!string.IsNullOrEmpty(chunk.Content))
                 {
-                    fullResponse.Append(chunk.Content);
-                    yield return chunk.Content;
+                    var delta = textAssembler.AppendAndGetDelta(chunk.Content);
+                    if (!string.IsNullOrEmpty(delta))
+                    {
+                        yield return delta;
+                    }
                 }
 
                 // The last chunk with metadata should have the final usage stats.
@@ -311,10 +392,10 @@ namespace AI_AI_Agent.Application.Services
                 totalTokens = promptTokens + completionTokens;
             }
 
-            // 5. Save assistant message
+            // 5. Save assistant message (using deduplicated text from assembler)
             var assistantMessage = new Message
             {
-                Content = fullResponse.ToString(),
+                Content = textAssembler.GetText(),
                 Roles = MessageRole.Assistant,
                 ChatId = chat.ChatGuid,
                 InputToken = promptTokens,
@@ -322,7 +403,24 @@ namespace AI_AI_Agent.Application.Services
                 TotalToken = totalTokens
             };
             await _messageService.AddAsync(_mapper.Map<MessageDto>(assistantMessage));
+
+            // 6. Emit usage as a final JSON event so UI can display token/cost
+            var usagePayload = new
+            {
+                type = "usage",
+                data = new { promptTokens, completionTokens, totalTokens }
+            };
+            yield return JsonSerializer.Serialize(usagePayload);
         }
+
+        private static string NormalizeProvider(string s)
+        {
+            return s.Equals("openai", StringComparison.OrdinalIgnoreCase) ? "OpenAI"
+                 : s.Equals("google", StringComparison.OrdinalIgnoreCase) ? "Google"
+                 : s;
+        }
+
+        
 
 
         public async Task<ChatDto> GetChatByUIdAsync(Guid uId, string userId)
@@ -330,7 +428,7 @@ namespace AI_AI_Agent.Application.Services
             var chat = await _chatRepo.GetByIdAsync(uId, c => c.Messages);
             if (chat == null || chat.UserId != userId)
             {
-                return null;
+                return new ChatDto();
             }
             return _mapper.Map<ChatDto>(chat);
         }
@@ -376,9 +474,10 @@ namespace AI_AI_Agent.Application.Services
             }
 
             // 2. Save the user's message
+            var q = request.Query ?? string.Empty;
             var userMessage = new Message
             {
-                Content = request.Query,
+                Content = q,
                 Roles = MessageRole.User,
                 ChatId = chatGuid,
                 TimeStamp = DateTime.UtcNow
@@ -393,46 +492,159 @@ namespace AI_AI_Agent.Application.Services
             try
             {
                 streamChunks.Add(JsonSerializer.Serialize(new { type = "status", data = "Searching the web..." }));
-                var searchResult = await _googleSearchService.SearchAsync(request.Query);
+                var searchResult = await _googleSearchService.SearchAsync(q);
 
                 if (!string.IsNullOrEmpty(searchResult.Error) || (searchResult.Results?.Any() != true))
                 {
                     hasError = true;
-                    errorMessage = searchResult.Error ?? "No results found or failed to retrieve content.";
+                    // Provide more helpful error message
+                    if (!string.IsNullOrEmpty(searchResult.Error))
+                    {
+                        errorMessage = $"Web search failed: {searchResult.Error}. Please check if your Google Custom Search API is configured correctly in user secrets.";
+                    }
+                    else
+                    {
+                        errorMessage = "No results found for your query. Try rephrasing your search or check API configuration.";
+                    }
+                    _logger.LogWarning("Web search returned no results or error for query '{Query}': {Error}", q, searchResult.Error ?? "No results");
                 }
                 else
                 {
-                    streamChunks.Add(JsonSerializer.Serialize(new { type = "status", data = "Synthesizing answer..." }));
+                    streamChunks.Add(JsonSerializer.Serialize(new { type = "status", data = "Analyzing results and synthesizing answer..." }));
+
+                    // Enhanced formatting with more context for the AI
+                    var formattedResults = string.Join("\n\n", (searchResult.Results ?? new List<WebSearchResult>()).Select((r, i) => 
+                        $"## Source [{i + 1}]\n" +
+                        $"**Title:** {r.Title}\n" +
+                        $"**Content:** {r.Snippet}\n" +
+                        $"**URL:** {r.Url}"));
                     
-                    var summarizationPrompt = @"
-                        Based on the following search results, provide a comprehensive answer to the user's query.
-                        Combine the information from the snippets to form a coherent response.
-                        Cite the sources using footnotes like [1], [2], etc., at the end of the relevant sentences.
-                        
-                        User Query: {{$query}}
+                    _logger.LogInformation("Summarization input prepared with {Count} sources (total len={Len})", searchResult.Results?.Count ?? 0, formattedResults.Length);
 
-                        Search Results:
-                        {{$results}}
-                        
-                        Answer:
-                    ";
-                    
-                    var formattedResults = string.Join("\n\n", searchResult.Results.Select((r, i) => $"[{i + 1}] Title: {r.Title}\nSnippet: {r.Snippet}\nURL: {r.Url}"));
-                    _logger.LogInformation("Sending the following formatted results to the AI for summarization:\n{FormattedResults}", formattedResults);
-
-                    var summarizerFunction = _kernel.CreateFunctionFromPrompt(summarizationPrompt);
-                    var summaryResultStream = _kernel.InvokeStreamingAsync<StreamingChatMessageContent>(summarizerFunction, new() { { "query", request.Query }, { "results", formattedResults } });
-
-                    var summaryBuilder = new System.Text.StringBuilder();
-                    await foreach (var chunk in summaryResultStream)
+                    // If no chat model is configured, do a very simple local summarization
+                    var chatService = _kernel.Services.GetService<IChatCompletionService>();
+                    if (chatService is null)
                     {
-                        if (chunk.Content is not null)
+                        var lines = formattedResults.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Take(24).ToList();
+                        var head = string.Join("\n", lines);
+                        var local = $"Summary for '{q}':\n" + head;
+                        foreach (var chunk in local.Chunk(64))
                         {
-                            summaryBuilder.Append(chunk.Content);
-                            streamChunks.Add(JsonSerializer.Serialize(new { type = "summary_chunk", data = chunk.Content }));
+                            var piece = new string(chunk);
+                            streamChunks.Add(JsonSerializer.Serialize(new { type = "summary_chunk", data = piece }));
                         }
+                        fullSummary = local;
                     }
-                    fullSummary = summaryBuilder.ToString();
+                    else
+                    {
+                        var summarizationPrompt = @"
+You are an expert research assistant providing direct, accurate answers based on web search results.
+
+🎯 **CRITICAL INSTRUCTIONS:**
+
+1. **DIRECTLY ANSWER THE QUESTION FIRST**
+   - Start immediately with the specific answer the user wants
+   - Don't start with ""Let me research..."" or ""Here's what I found...""
+   - Get straight to the point in the first sentence
+
+2. **BE PRECISE AND SPECIFIC**
+   - Include exact numbers, dates, names, prices, locations
+   - If the query asks ""when"", give the date/time
+   - If the query asks ""who"", give the name(s)
+   - If the query asks ""how much"", give the price/amount
+   - If the query asks ""where"", give the location
+
+3. **STRUCTURE YOUR RESPONSE**
+   - **First paragraph:** Direct answer with key facts
+   - **Following paragraphs:** Supporting details and context
+   - Use bullet points for lists and multiple items
+   - Use **bold** for important facts
+   - Add section headers (##) only if multiple topics
+
+4. **CITE SOURCES INLINE**
+   - Use [1], [2], [3] right after each fact
+   - Add ""**Sources:**"" section at the end with URLs
+
+5. **HANDLE AMBIGUOUS QUERIES**
+   - If query is vague, cover the most likely interpretations
+   - Example: ""first person"" → could mean ""first human"", ""richest person"", ""most powerful person""
+   - Address each interpretation briefly
+
+6. **BE CONVERSATIONAL BUT AUTHORITATIVE**
+   - Write naturally, as if explaining to a colleague
+   - Avoid overly formal or academic language
+   - But remain factual and credible
+
+---
+
+**Examples of GOOD responses:**
+
+Query: ""When is the next iPhone release?""
+✅ Good: ""The next iPhone 16 is expected to launch in **September 2025**, following Apple's typical annual release pattern. The keynote event is likely scheduled for mid-September, with devices shipping shortly after. [1]
+
+Key expected features include... [2]
+
+**Sources:**
+[1] techcrunch.com/article
+[2] macrumors.com/iphone-16""
+
+❌ Bad: ""Based on the search results, I found information about iPhone releases. Let me break this down into sections...""
+
+---
+
+Query: ""Who won the election in Argentina?""
+✅ Good: ""**Javier Milei** won Argentina's presidential election in November 2023. He defeated Economy Minister Sergio Massa in the runoff election with 55.7% of the vote. [1] Milei is a libertarian economist who campaigned on radical economic reforms. [2]""
+
+❌ Bad: ""The search results show information about elections. Here's what I found:...""
+
+---
+
+**User Query:** {{$query}}
+
+**Search Results:**
+{{$results}}
+
+---
+
+**Your Direct Answer:**
+                        ";
+
+                        var summarizerFunction = _kernel.CreateFunctionFromPrompt(summarizationPrompt);
+                        
+                        // Use optimal settings for web search synthesis - lower temperature for accuracy
+                        var executionSettings = new PromptExecutionSettings
+                        {
+                            ExtensionData = new Dictionary<string, object>
+                            {
+                                ["temperature"] = 0.3,      // Low temperature for factual accuracy
+                                ["max_tokens"] = 2500,      // Allow comprehensive answers
+                                ["top_p"] = 0.9            // Focus on high-probability tokens
+                            }
+                        };
+                        
+                        var summaryResultStream = _kernel.InvokeStreamingAsync<StreamingChatMessageContent>(
+                            summarizerFunction, 
+                            new KernelArguments(executionSettings) 
+                            { 
+                                { "query", q }, 
+                                { "results", formattedResults } 
+                            });
+
+                        // Use StreamTextAssembler to eliminate duplicate chunks
+                        var textAssembler = new StreamTextAssembler();
+                        await foreach (var chunk in summaryResultStream)
+                        {
+                            if (chunk.Content is not null)
+                            {
+                                var piece = textAssembler.AppendAndGetDelta(chunk.Content);
+                                if (!string.IsNullOrEmpty(piece))
+                                {
+                                    streamChunks.Add(JsonSerializer.Serialize(new { type = "summary_chunk", data = piece }));
+                                }
+                            }
+                        }
+                        fullSummary = textAssembler.GetText();
+                    }
                 }
             }
             catch (Exception ex)

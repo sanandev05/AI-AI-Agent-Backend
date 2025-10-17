@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>General AI Agent</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 80vh;
+        }
+        
+        .left-panel {
+            padding: 30px;
+            border-right: 1px solid #eee;
+        }
+        
+        .right-panel {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .input-group textarea,
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group textarea {
+            height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .input-group textarea:focus,
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .narration-panel {
+            height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .narration-message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            white-space: pre-wrap;
+        }
+        
+        .narration-message.plan {
+            border-left-color: #28a745;
+            background: rgba(40, 167, 69, 0.05);
+        }
+        
+        .narration-message.error {
+            border-left-color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+        }
+        
+        .files-list {
+            margin-top: 20px;
+        }
+        
+        .files-list h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+        
+        .file-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .file-item a:hover {
+            text-decoration: underline;
+        }
+        
+        .examples {
+            background: rgba(102, 126, 234, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .examples h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .example {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .example:hover {
+            background: #f0f2ff;
+        }
+
+        /* Approval bar */
+        .approval-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 380px;
+            display: none;
+            z-index: 1000;
+        }
+        .approval-bar h4 { margin-bottom: 8px; color: #8d6e63; }
+        .approval-bar .small { color: #6b7280; font-size: 12px; margin-bottom: 10px; display:block; }
+        .approval-actions { display: flex; gap: 10px; }
+        .btn-secondary { background: #6b7280; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 General AI Agent</h1>
+            <p>Your autonomous assistant for research, analysis, browsing, and document creation</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="input-group">
+                    <label for="goal">What would you like me to do?</label>
+                    <textarea id="goal" placeholder="Examples:&#10;• Research the latest developments in AI safety&#10;• Compare different cloud computing platforms&#10;• Create a comprehensive guide on sustainable energy&#10;• Analyze market trends for electric vehicles&#10;• Write a report on remote work productivity"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>Sign in to get a token</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center;">
+                        <input id="email" type="email" placeholder="email" />
+                        <input id="password" type="password" placeholder="password" />
+                        <button id="loginBtn" class="btn">🔐 Sign In</button>
+                    </div>
+                    <small id="authStatus" style="display:block; color:#6b7280; margin-top:6px;">Not signed in</small>
+                </div>
+
+                <div class="input-group">
+                    <label for="apiBase">API Base URL</label>
+                    <input id="apiBase" type="text" placeholder="https://localhost:7210" />
+                    <small style="display:block; color:#6b7280; margin-top:6px;">All requests will use this base URL (hub and REST). Defaults to current origin.</small>
+                </div>
+
+                <div class="input-group">
+                    <label for="taskId">Task ID</label>
+                    <input id="taskId" type="text" placeholder="default" />
+                    <small style="display:block; color:#6b7280; margin-top:6px;">Used for POST /tasks/{taskId}/runs</small>
+                </div>
+
+                <div class="input-group">
+                    <label for="token">Bearer token (optional)</label>
+                    <input id="token" type="text" placeholder="Paste JWT here if your API requires auth" />
+                </div>
+                
+                <div class="input-group">
+                    <button id="startBtn" class="btn">🚀 Start Agent</button>
+                    <button id="stopBtn" class="btn" style="background: #dc3545;" disabled>⏹️ Stop</button>
+                </div>
+                
+                <div id="status" class="status disconnected">
+                    🔴 Disconnected from Agent Hub
+                </div>
+                
+                <div class="examples">
+                    <h3>💡 Example Goals</h3>
+                    <div class="example" onclick="setGoal('Research the current state of quantum computing and its potential applications')">Research quantum computing applications</div>
+                    <div class="example" onclick="setGoal('Compare the features and pricing of major cloud platforms (AWS, Azure, GCP)')">Compare cloud platforms</div>
+                    <div class="example" onclick="setGoal('Create a comprehensive guide on getting started with machine learning')">ML getting started guide</div>
+                    <div class="example" onclick="setGoal('Analyze the impact of remote work on company productivity and culture')">Remote work analysis</div>
+                    <div class="example" onclick="setGoal('Research renewable energy technologies and their environmental impact')">Renewable energy research</div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <h3>📝 Agent Narration</h3>
+                <div id="narration" class="narration-panel">
+                    <div style="text-align: center; color: #666; margin-top: 150px;">
+                        🤖 Agent narration will appear here during execution<br>
+                        <small>The agent will explain each step as it works</small>
+                    </div>
+                </div>
+                
+                <div class="files-list">
+                    <h3>📁 Generated Files</h3>
+                    <div id="files">
+                        <p style="color: #666; font-style: italic;">No files generated yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Bar -->
+    <div id="approvalBar" class="approval-bar">
+        <h4>Approval required</h4>
+        <span id="approvalText" class="small">A risky step needs your confirmation.</span>
+        <div class="approval-actions">
+            <button id="approveBtn" class="btn">✅ Approve</button>
+            <button id="denyBtn" class="btn btn-secondary">🚫 Deny</button>
+        </div>
+    </div>
+
+    <script>
+    let connection = null;
+    let currentRunId = null;
+    let pendingApproval = { stepId: null, tool: null };
+        
+        const goalInput = document.getElementById('goal');
+    const tokenInput = document.getElementById('token');
+    const apiBaseInput = document.getElementById('apiBase');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const authStatus = document.getElementById('authStatus');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const status = document.getElementById('status');
+        const narrationPanel = document.getElementById('narration');
+        const filesDiv = document.getElementById('files');
+    const approvalBar = document.getElementById('approvalBar');
+    const approvalText = document.getElementById('approvalText');
+    const approveBtn = document.getElementById('approveBtn');
+    const denyBtn = document.getElementById('denyBtn');
+        
+        function setGoal(exampleGoal) {
+            goalInput.value = exampleGoal;
+        }
+        
+        function updateStatus(connected) {
+            if (connected) {
+                status.textContent = '🟢 Connected to Agent Hub';
+                status.className = 'status connected';
+            } else {
+                status.textContent = '🔴 Disconnected from Agent Hub';
+                status.className = 'status disconnected';
+            }
+        }
+        
+        function addNarration(message, type = '') {
+            const div = document.createElement('div');
+            div.className = `narration-message ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            narrationPanel.appendChild(div);
+            narrationPanel.scrollTop = narrationPanel.scrollHeight;
+        }
+        
+        function clearNarration() {
+            narrationPanel.innerHTML = '';
+        }
+
+        function getApiBase() {
+            let v = (apiBaseInput.value || '').trim();
+            if (!v) v = window.location.origin;
+            // Remove trailing slashes
+            while (v.endsWith('/')) v = v.slice(0, -1);
+            return v;
+        }
+        
+        function updateFiles(runId) {
+            if (!runId) return;
+            
+            fetch(`${getApiBase()}/api/runs/${runId}/files`)
+                .then(response => response.json())
+                .then(files => {
+                    if (files.length === 0) {
+                        filesDiv.innerHTML = '<p style="color: #666; font-style: italic;">No files generated yet</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    files.forEach(file => {
+                        html += `
+                            <div class="file-item">
+                                <a href="${file.downloadUrl || `${getApiBase()}/api/runs/${runId}/files/${encodeURIComponent(file.name)}` }" target="_blank">
+                                    📄 ${file.name}
+                                </a>
+                                <small>${(file.size / 1024).toFixed(1)} KB</small>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `
+                        <div class="file-item">
+                            <a href="${getApiBase()}/api/runs/${runId}/files/zip" target="_blank">
+                                📦 Download All Files (ZIP)
+                            </a>
+                        </div>
+                    `;
+                    
+                    filesDiv.innerHTML = html;
+                })
+                .catch(err => console.error('Failed to load files:', err));
+        }
+        
+        async function connectToHub() {
+            try {
+                const accessTokenFactory = () => {
+                    const t = tokenInput.value?.trim();
+                    return t && t.length > 0 ? t : null;
+                };
+
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(`${getApiBase()}/hub/runs`, { accessTokenFactory })
+                    .withAutomaticReconnect()
+                    .build();
+                
+                connection.on('event', (event) => {
+                    console.log('Event:', event);
+                    
+                    const eventType = event.$type || event.constructor?.name || 'Unknown';
+                    
+                    switch (eventType) {
+                        case 'RunStarted':
+                            addNarration(`🚀 Run started: ${event.goal}`, 'plan');
+                            break;
+                        case 'PermissionRequested':
+                            pendingApproval = { stepId: event.stepId, tool: event.tool };
+                            approvalText.textContent = `Allow tool "${event.tool}" to run?`;
+                            approvalBar.style.display = 'block';
+                            addNarration(`🛑 Approval requested for ${event.tool}`, 'plan');
+                            break;
+                        case 'PermissionGranted':
+                            approvalBar.style.display = 'none';
+                            pendingApproval = { stepId: null, tool: null };
+                            addNarration(`✅ Permission granted`, 'plan');
+                            break;
+                        case 'PermissionDenied':
+                            approvalBar.style.display = 'none';
+                            addNarration(`🚫 Permission denied: ${event.reason || ''}`, 'error');
+                            break;
+                        case 'StepStarted':
+                            addNarration(`🔄 Starting ${event.tool}...`);
+                            break;
+                        case 'ToolOutput':
+                            addNarration(`✅ ${event.summary}`);
+                            break;
+                        case 'StepSucceeded':
+                            addNarration(`✅ Step completed successfully`);
+                            updateFiles(currentRunId);
+                            break;
+                        case 'StepFailed':
+                            addNarration(`❌ Step failed: ${event.message} (Attempt ${event.attempt})`, 'error');
+                            break;
+                        case 'RunSucceeded':
+                            addNarration(`🎉 Run completed successfully! Duration: ${Math.round(event.elapsed.totalMinutes * 100) / 100} minutes`, 'plan');
+                            updateFiles(currentRunId);
+                            startBtn.disabled = false;
+                            stopBtn.disabled = true;
+                            break;
+                        case 'RunFailed':
+                            addNarration(`💥 Run failed: ${event.message}`, 'error');
+                            startBtn.disabled = false;
+                            stopBtn.disabled = true;
+                            break;
+                        case 'ArtifactCreated':
+                            addNarration(`📁 Created: ${event.artifact.fileName}`);
+                            updateFiles(currentRunId);
+                            break;
+                    }
+                });
+                
+                connection.on('narration', (narration) => {
+                    console.log('Narration:', narration);
+                    const type = narration.stepId === 'PLAN' ? 'plan' : 
+                                narration.stepId === 'FINAL' ? 'plan' : '';
+                    addNarration(narration.message, type);
+                });
+                
+                connection.onreconnected(() => {
+                    updateStatus(true);
+                    addNarration('🔄 Reconnected to Agent Hub');
+                });
+                
+                connection.onclose(() => {
+                    updateStatus(false);
+                    addNarration('🔌 Disconnected from Agent Hub', 'error');
+                });
+                
+                await connection.start();
+                updateStatus(true);
+                addNarration('🔌 Connected to Agent Hub');
+                authStatus.textContent = tokenInput.value?.trim() ? 'Signed in (token set)' : 'Anonymous connection';
+                
+            } catch (err) {
+                console.error('Connection failed:', err);
+                updateStatus(false);
+                addNarration(`❌ Connection failed: ${err.message}`, 'error');
+                if (!tokenInput.value?.trim()) {
+                    authStatus.textContent = 'Not signed in (token missing)';
+                }
+            }
+        }
+        
+        startBtn.addEventListener('click', async () => {
+            const goal = goalInput.value.trim();
+            if (!goal) {
+                alert('Please enter a goal for the agent');
+                return;
+            }
+            
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('Not connected to Agent Hub. Trying to reconnect...');
+                await connectToHub();
+                return;
+            }
+            
+            try {
+                clearNarration();
+                filesDiv.innerHTML = '<p style="color: #666; font-style: italic;">No files generated yet</p>';
+                
+                addNarration(`🎯 Starting agent with goal: ${goal}`, 'plan');
+                
+                const headers = { 'Content-Type': 'application/json' };
+                const t = tokenInput.value?.trim();
+                if (t && t.length > 0) headers['Authorization'] = `Bearer ${t}`;
+
+                const taskIdInput = document.getElementById('taskId');
+                const taskId = (taskIdInput?.value || 'default').trim() || 'default';
+                const response = await fetch(`${getApiBase()}/tasks/${encodeURIComponent(taskId)}/runs`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ goal: goal })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                currentRunId = result.runId;
+                
+                // Join the run group to receive events
+                await connection.invoke('Join', currentRunId);
+                
+                addNarration(`📋 Run created: ${currentRunId}`, 'plan');
+                addNarration('⏳ Agent is planning approach...', 'plan');
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                
+            } catch (err) {
+                console.error('Failed to start run:', err);
+                addNarration(`❌ Failed to start: ${err.message}`, 'error');
+            }
+        });
+        
+        stopBtn.addEventListener('click', async () => {
+            if (currentRunId && connection) {
+                try {
+                    await connection.invoke('LeaveRunGroup', currentRunId);
+                    addNarration('⏹️ Stopped monitoring run', 'error');
+                } catch (err) {
+                    console.error('Failed to stop:', err);
+                }
+            }
+            
+            currentRunId = null;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
+
+        approveBtn.addEventListener('click', async () => {
+            if (!pendingApproval.stepId || !connection) return;
+            try {
+                await connection.invoke('Grant', currentRunId, pendingApproval.stepId);
+            } catch (err) {
+                console.error('Grant failed:', err);
+            } finally {
+                approvalBar.style.display = 'none';
+            }
+        });
+
+        denyBtn.addEventListener('click', async () => {
+            if (!pendingApproval.stepId || !connection) return;
+            try {
+                await connection.invoke('Deny', currentRunId, pendingApproval.stepId, 'Denied by user');
+            } catch (err) {
+                console.error('Deny failed:', err);
+            } finally {
+                approvalBar.style.display = 'none';
+            }
+        });
+
+        loginBtn.addEventListener('click', async () => {
+            const u = emailInput.value.trim();
+            const p = passwordInput.value.trim();
+            if (!u || !p) {
+                alert('Enter email and password');
+                return;
+            }
+            try {
+                const resp = await fetch(`${getApiBase()}/api/identity/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: u, password: p })
+                });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                tokenInput.value = data.token;
+                authStatus.textContent = 'Signed in (token received)';
+                addNarration('🔑 Signed in, token acquired');
+                // Reconnect hub with token if not connected
+                try {
+                    if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                        await connectToHub();
+                    }
+                } catch {}
+            } catch (e) {
+                console.error('Login failed', e);
+                authStatus.textContent = 'Sign-in failed';
+                addNarration(`❌ Sign-in failed: ${e.message}`, 'error');
+            }
+        });
+        
+        // Initialize
+        // Try to prefill settings from session if present
+        try {
+            const saved = sessionStorage.getItem('agent:token');
+            if (saved) tokenInput.value = saved;
+            const savedApi = sessionStorage.getItem('agent:api');
+            apiBaseInput.value = savedApi || window.location.origin;
+        } catch {}
+        connectToHub();
+
+        // Persist token on change
+        tokenInput.addEventListener('input', () => {
+            try { sessionStorage.setItem('agent:token', tokenInput.value.trim()); } catch {}
+        });
+
+        // Persist API base on change
+        apiBaseInput.addEventListener('input', () => {
+            try { sessionStorage.setItem('agent:api', apiBaseInput.value.trim()); } catch {}
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Run Monitor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+  <style>
+    body { font-family: system-ui, Segoe UI, Arial; margin: 16px; }
+    #log { white-space: pre-wrap; background:#111; color:#eee; padding:12px; height: 60vh; overflow:auto; border-radius:8px; }
+    input, button { padding: 8px; margin: 4px; }
+  </style>
+  </head>
+<body>
+  <h2>Run Monitor</h2>
+  <div>
+    <label>Run Id:</label>
+    <input id="runId" size="40" placeholder="paste runId..." />
+    <button id="join">Join</button>
+  </div>
+  <div id="log"></div>
+  <script>
+    const logEl = document.getElementById('log');
+    function log(msg){ const t=new Date().toISOString(); logEl.textContent += `[${t}] ${msg}\n`; logEl.scrollTop = logEl.scrollHeight; }
+    const conn = new signalR.HubConnectionBuilder().withUrl('/hub/runs').withAutomaticReconnect().configureLogging('information').build();
+    conn.on('event', (evt) => { log(JSON.stringify(evt)); });
+    conn.start().then(()=> log('Connected')).catch(err => log('Connect error: '+err));
+    document.getElementById('join').onclick = async ()=>{
+      const id = document.getElementById('runId').value.trim();
+      if(!id) { alert('runId required'); return; }
+      await conn.invoke('Join', id);
+      log('Joined '+id);
+    };
+  </script>
+</body>
+</html>

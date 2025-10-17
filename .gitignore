@@ -9,7 +9,8 @@ appsettings.Development.json
 appsettings.*.json
 page.txt
 .env
-
+memory-bank
+memory-bank/
 
 # User-specific files
 *.rsuser

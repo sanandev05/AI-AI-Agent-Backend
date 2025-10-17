@@ -1,49 +1,59 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AI_AI_Agent.Contract.Services;
 using AI_AI_Agent.Domain.Agents;
+using AI_AI_Agent.Application.Agent;
+using System;
+using System.Threading.Tasks;
+using System.Threading;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace AI_AI_Agent.API.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [Route("api/agent")]
     [ApiController]
     public class AgentController : ControllerBase
     {
-        private readonly IAgent _agent;
+        private readonly IOrchestrator _orchestrator;
+        private readonly AI_AI_Agent.Application.Services.IRunCancellationRegistry _runs;
 
-        public AgentController(IAgent agent)
+        public AgentController(IOrchestrator orchestrator, AI_AI_Agent.Application.Services.IRunCancellationRegistry runs)
         {
-            _agent = agent;
+            _orchestrator = orchestrator;
+            _runs = runs;
         }
 
-        /// <summary>
-        /// Accepts a high-level goal and returns the agent's autonomous result.
-        /// </summary>
-        /// <param name="request">The goal request.</param>
-        /// <returns>The agent's result or error.</returns>
-        [HttpPost("achieve-goal")]
-        public async Task<IActionResult> AchieveGoal([FromBody] AgentGoalRequest request)
+        [HttpPost("chat/{chatId:guid}")]
+    public IActionResult ExecuteAgentTurn(Guid chatId, [FromBody] AgentTurnRequest request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(request?.Goal))
-                return BadRequest("Goal is required.");
-            try
-            {
-                var result = await _agent.AchieveGoalAsync(request.Goal);
-                return Ok(new { result });
-            }
-            catch (System.Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            // Create a dedicated cancellation token for this run and start the loop.
+            var token = _runs.Register(chatId.ToString());
+            _ = _orchestrator.RunAsync(chatId.ToString(), request.Prompt, token)
+                .ContinueWith(_ => _runs.Complete(chatId.ToString()));
+
+            return Accepted(new { message = "Agent loop started. Listen for events on the SignalR hub.", chatId });
+        }
+
+        [HttpPost("chat/{chatId:guid}/cancel")]
+        public IActionResult CancelAgentRun(Guid chatId)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var ok = _runs.Cancel(chatId.ToString());
+            if (!ok) return NotFound(new { message = "No active run found for this chat." });
+            return Ok(new { message = "Cancellation requested." });
         }
     }
 
-    /// <summary>
-    /// Request DTO for agent goal.
-    /// </summary>
-    public class AgentGoalRequest
+    public class AgentTurnRequest
     {
-        public string? Goal { get; set; }
+        public string Prompt { get; set; } = string.Empty;
     }
 }

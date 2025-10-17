@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build solution",
+			"type": "shell",
+			"command": "dotnet build \"c:\\Users\\Icomp\\Desktop\\Final Project\\AI-AI-Agent-Backend\\AI.Agent.sln\" -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build solution (src)",
+			"type": "shell",
+			"command": "dotnet build \"c:\\Users\\Icomp\\Desktop\\Final Project\\AI-AI-Agent-Backend\\AI.Agent.sln\" -c Debug --nologo -v m",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		}
+	]
+}

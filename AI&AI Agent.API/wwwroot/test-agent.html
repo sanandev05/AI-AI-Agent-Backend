@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>General AI Agent</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+            .header h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+            }
+
+            .header p {
+                opacity: 0.9;
+                font-size: 1.1em;
+            }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 80vh;
+        }
+
+        .left-panel {
+            padding: 30px;
+            border-right: 1px solid #eee;
+        }
+
+        .right-panel {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+            .input-group label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #333;
+            }
+
+            .input-group textarea,
+            .input-group input {
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #e1e5e9;
+                border-radius: 8px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+            }
+
+            .input-group textarea {
+                height: 120px;
+                resize: vertical;
+                font-family: inherit;
+            }
+
+                .input-group textarea:focus,
+                .input-group input:focus {
+                    outline: none;
+                    border-color: #667eea;
+                }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+        }
+
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            }
+
+            .btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+            .status.connected {
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+
+            .status.disconnected {
+                background: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }
+
+        .narration-panel {
+            height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .narration-message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            white-space: pre-wrap;
+        }
+
+            .narration-message.plan {
+                border-left-color: #28a745;
+                background: rgba(40, 167, 69, 0.05);
+            }
+
+            .narration-message.error {
+                border-left-color: #dc3545;
+                background: rgba(220, 53, 69, 0.05);
+            }
+
+        .files-list {
+            margin-top: 20px;
+        }
+
+            .files-list h3 {
+                margin-bottom: 10px;
+                color: #333;
+            }
+
+        .file-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+
+            .file-item a {
+                color: #667eea;
+                text-decoration: none;
+                font-weight: 500;
+            }
+
+                .file-item a:hover {
+                    text-decoration: underline;
+                }
+
+        .examples {
+            background: rgba(102, 126, 234, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+            .examples h3 {
+                color: #667eea;
+                margin-bottom: 10px;
+            }
+
+        .example {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+            .example:hover {
+                background: #f0f2ff;
+            }
+
+        /* Approval bar */
+        .approval-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 380px;
+            display: none;
+            z-index: 1000;
+        }
+
+            .approval-bar h4 {
+                margin-bottom: 8px;
+                color: #8d6e63;
+            }
+
+            .approval-bar .small {
+                color: #6b7280;
+                font-size: 12px;
+                margin-bottom: 10px;
+                display: block;
+            }
+
+        .approval-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        details {
+            margin-bottom: 8px;
+        }
+
+        details summary {
+            user-select: none;
+            padding: 8px;
+            background: rgba(102, 126, 234, 0.08);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        details[open] summary {
+            margin-bottom: 12px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .quick-btn {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats-panel {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Agent Test Console</h1>
+            <p>Test all 21 services • Phase 5 Features • Real-time monitoring</p>
+            <div style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
+                ✅ Workspace Management • ✅ Code Interpreter • ✅ Knowledge Retrieval • ✅ Multi-Modal Understanding
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="input-group">
+                    <label for="goal">What would you like me to do?</label>
+                    <textarea id="goal" placeholder="Examples:&#10;• Research the latest developments in AI safety&#10;• Compare different cloud computing platforms&#10;• Create a comprehensive guide on sustainable energy&#10;• Analyze market trends for electric vehicles&#10;• Write a report on remote work productivity"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>Sign in to get a token</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center;">
+                        <input id="username" type="text" placeholder="username" />
+                        <input id="password" type="password" placeholder="password" />
+                        <button id="loginBtn" class="btn">🔐 Sign In</button>
+                    </div>
+                    <small id="authStatus" style="display:block; color:#6b7280; margin-top:6px;">Not signed in</small>
+                </div>
+
+                <div class="input-group">
+                    <label for="apiBase">API Base URL</label>
+                    <input id="apiBase" type="text" placeholder="https://localhost:7210" />
+                    <small style="display:block; color:#6b7280; margin-top:6px;">All requests will use this base URL (hub and REST). Defaults to current origin.</small>
+                </div>
+
+                <div class="input-group">
+                    <label for="token">Bearer token (optional)</label>
+                    <input id="token" type="text" placeholder="Paste JWT here if your API requires auth" />
+                </div>
+
+                <div class="input-group">
+                    <button id="startBtn" class="btn">🚀 Start Agent</button>
+                    <button id="stopBtn" class="btn" style="background: #dc3545;" disabled>⏹️ Stop</button>
+                </div>
+
+                <div id="status" class="status disconnected">
+                    🔴 Disconnected from Agent Hub
+                </div>
+
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <div class="stat-value" id="statRuns">0</div>
+                        <div class="stat-label">RUNS</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statSteps">0</div>
+                        <div class="stat-label">STEPS</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statFiles">0</div>
+                        <div class="stat-label">FILES</div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="clearNarration()">🗑️ Clear Log</button>
+                    <button class="quick-btn" onclick="refreshFiles()">🔄 Refresh Files</button>
+                    <button class="quick-btn" onclick="testConnection()">🔌 Test Connection</button>
+                    <button class="quick-btn" onclick="downloadLogs()">💾 Export Logs</button>
+                </div>
+
+                <div class="examples">
+                    <h3>💡 Quick Test Prompts</h3>
+                    
+                    <details open>
+                        <summary style="cursor: pointer; font-weight: 600; color: #667eea; margin-bottom: 8px;">🧪 Basic Features</summary>
+                        <div class="example" onclick="setGoal('Calculate 123 * 456 and explain the result')">Simple calculation</div>
+                        <div class="example" onclick="setGoal('Create a markdown file called test.md with 5 benefits of AI')">File creation test</div>
+                        <div class="example" onclick="setGoal('Search for information about quantum computing')">Web search test</div>
+                    </details>
+
+                    <details open style="margin-top: 10px;">
+                        <summary style="cursor: pointer; font-weight: 600; color: #28a745; margin-bottom: 8px;">🚀 Phase 5.1 - Workspace & Analysis</summary>
+                        <div class="example" onclick="setGoal('Create a new Python data science workspace with sample analysis scripts')">Workspace creation</div>
+                        <div class="example" onclick="setGoal('Analyze the project structure and provide architectural insights')">Project understanding</div>
+                        <div class="example" onclick="setGoal('Give me proactive suggestions for improving code quality')">Proactive assistance</div>
+                    </details>
+
+                    <details open style="margin-top: 10px;">
+                        <summary style="cursor: pointer; font-weight: 600; color: #dc3545; margin-bottom: 8px;">🤖 Phase 5.2 - Code & Knowledge</summary>
+                        <div class="example" onclick="setGoal('Execute Python code: print(\\\'Hello World\\\'); result = 10 * 5; print(f\\\'Result: {result}\\\')')">Code interpreter</div>
+                        <div class="example" onclick="setGoal('Search the knowledge base for machine learning algorithms and verify the facts')">Knowledge retrieval</div>
+                        <div class="example" onclick="setGoal('Analyze this document and extract key information from README.md')">Document analysis</div>
+                    </details>
+
+                    <details style="margin-top: 10px;">
+                        <summary style="cursor: pointer; font-weight: 600; color: #764ba2; margin-bottom: 8px;">📊 Advanced Features</summary>
+                        <div class="example" onclick="setGoal('Research AI trends 2025 and create a DOCX report')">Research + DOCX export</div>
+                        <div class="example" onclick="setGoal('Compare iPhone 15 vs Samsung Galaxy S24 and create a comparison table')">Product comparison</div>
+                        <div class="example" onclick="setGoal('Create a chart showing sales trends with sample data')">Data visualization</div>
+                        <div class="example" onclick="setGoal('Draft a professional email to schedule a meeting next Tuesday')">Email drafting</div>
+                    </details>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <h3>📝 Agent Activity Log</h3>
+                <div id="narration" class="narration-panel">
+                    <div style="text-align: center; color: #666; margin-top: 130px;">
+                        🤖 <strong>Real-time Agent Monitoring</strong><br><br>
+                        <small>• Step-by-step execution tracking<br>
+                        • Tool usage and results<br>
+                        • File creation notifications<br>
+                        • Error handling and recovery<br><br>
+                        Select a test prompt and click "Start Agent"</small>
+                    </div>
+                </div>
+
+                <div class="files-list">
+                    <h3>📁 Generated Files</h3>
+                    <div id="files">
+                        <p style="color: #666; font-style: italic;">No files generated yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Bar -->
+    <div id="approvalBar" class="approval-bar">
+        <h4>Approval required</h4>
+        <span id="approvalText" class="small">A risky step needs your confirmation.</span>
+        <div class="approval-actions">
+            <button id="approveBtn" class="btn">✅ Approve</button>
+            <button id="denyBtn" class="btn btn-secondary">🚫 Deny</button>
+        </div>
+    </div>
+
+    <script>
+        let connection = null;
+        let currentRunId = null;
+        let pendingApproval = { stepId: null, tool: null };
+        let stats = { runs: 0, steps: 0, files: 0 };
+        let logMessages = [];
+
+        const goalInput = document.getElementById('goal');
+        const tokenInput = document.getElementById('token');
+        const apiBaseInput = document.getElementById('apiBase');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const authStatus = document.getElementById('authStatus');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const status = document.getElementById('status');
+        const narrationPanel = document.getElementById('narration');
+        const filesDiv = document.getElementById('files');
+        const approvalBar = document.getElementById('approvalBar');
+        const approvalText = document.getElementById('approvalText');
+        const approveBtn = document.getElementById('approveBtn');
+        const denyBtn = document.getElementById('denyBtn');
+
+        function setGoal(exampleGoal) {
+            goalInput.value = exampleGoal;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                status.textContent = '🟢 Connected to Agent Hub';
+                status.className = 'status connected';
+            } else {
+                status.textContent = '🔴 Disconnected from Agent Hub';
+                status.className = 'status disconnected';
+            }
+        }
+
+        function addNarration(message, type = '') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = { timestamp, message, type };
+            logMessages.push(logEntry);
+            
+            const div = document.createElement('div');
+            div.className = `narration-message ${type}`;
+            div.textContent = `[${timestamp}] ${message}`;
+            narrationPanel.appendChild(div);
+            narrationPanel.scrollTop = narrationPanel.scrollHeight;
+        }
+
+        function clearNarration() {
+            narrationPanel.innerHTML = '<div style="text-align: center; color: #666; margin-top: 150px;">🤖 Logs cleared<br><small>New events will appear here</small></div>';
+            logMessages = [];
+        }
+
+        function updateStats() {
+            document.getElementById('statRuns').textContent = stats.runs;
+            document.getElementById('statSteps').textContent = stats.steps;
+            document.getElementById('statFiles').textContent = stats.files;
+        }
+
+        function refreshFiles() {
+            if (currentRunId) {
+                updateFiles(currentRunId);
+                addNarration('🔄 Files refreshed');
+            } else {
+                addNarration('⚠️ No active run to refresh files from', 'error');
+            }
+        }
+
+        function testConnection() {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                addNarration('✅ Connection is active and healthy', 'plan');
+            } else {
+                addNarration('❌ Not connected. Click Start to connect.', 'error');
+            }
+        }
+
+        function downloadLogs() {
+            const logText = logMessages.map(log => `[${log.timestamp}] ${log.message}`).join('\n');
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `agent-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addNarration('💾 Logs downloaded', 'plan');
+        }
+
+        function getApiBase() {
+            let v = (apiBaseInput.value || '').trim();
+            if (!v) v = window.location.origin;
+            // Remove trailing slashes
+            while (v.endsWith('/')) v = v.slice(0, -1);
+            return v;
+        }
+
+        function updateFiles(runId) {
+            if (!runId) return;
+
+            fetch(`${getApiBase()}/api/runs/${runId}/files`)
+                .then(response => response.json())
+                .then(files => {
+                    if (files.length === 0) {
+                        filesDiv.innerHTML = '<p style="color: #666; font-style: italic;">No files generated yet</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    files.forEach(file => {
+                        html += `
+                                <div class="file-item">
+                                    <a href="${getApiBase()}/api/runs/${runId}/files/${encodeURIComponent(file.fileName)}" target="_blank">
+                                        📄 ${file.fileName}
+                                    </a>
+                                    <small>${(file.size / 1024).toFixed(1)} KB</small>
+                                </div>
+                            `;
+                    });
+
+                    html += `
+                            <div class="file-item">
+                                <a href="${getApiBase()}/api/runs/${runId}/files/zip" target="_blank">
+                                    📦 Download All Files (ZIP)
+                                </a>
+                            </div>
+                        `;
+
+                    filesDiv.innerHTML = html;
+                })
+                .catch(err => console.error('Failed to load files:', err));
+        }
+
+        async function connectToHub() {
+            try {
+                const accessTokenFactory = () => {
+                    const t = tokenInput.value?.trim();
+                    return t && t.length > 0 ? t : null;
+                };
+
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(`${getApiBase()}/hubs/agent-events`, { accessTokenFactory })
+                    .withAutomaticReconnect()
+                    .build();
+
+                // Handle tool events
+                connection.on('tool:start', (event) => {
+                    console.log('Tool Start:', event);
+                    stats.steps++;
+                    updateStats();
+                    addNarration(`� Starting ${event.tool}...`);
+                });
+
+                connection.on('tool:end', (event) => {
+                    console.log('Tool End:', event);
+                    const resultStr = typeof event.result === 'string' ? event.result : JSON.stringify(event.result).substring(0, 100);
+                    addNarration(`✅ ${event.tool} completed`);
+                });
+
+                connection.on('final:answer', (event) => {
+                    console.log('Final Answer:', event);
+                    addNarration(`🎉 Agent: ${event.text}`, 'plan');
+                    startBtn.disabled = false;
+                    stopBtn.disabled = false;
+                });
+
+                connection.on('step:start', (event) => {
+                    console.log('Step Start:', event);
+                    addNarration(`� Step ${event.step}: Processing...`);
+                });
+
+                connection.on('raw:model', (event) => {
+                    console.log('Raw Model Output:', event);
+                    // Truncate long outputs
+                    const text = event.rawText?.substring(0, 200) || '';
+                    if (text) {
+                        addNarration(`🤖 Model: ${text}${event.rawText?.length > 200 ? '...' : ''}`);
+                    }
+                });
+
+                connection.on('file:created', (event) => {
+                    console.log('File Created:', event);
+                    stats.files++;
+                    updateStats();
+                    addNarration(`📁 Created: ${event.fileName} (${(event.sizeBytes / 1024).toFixed(1)} KB)`);
+                    // Note: updateFiles function needs to be adapted for agent API
+                });
+
+                connection.on('plan:created', (event) => {
+                    console.log('Plan Created:', event);
+                    addNarration(`� Plan created`, 'plan');
+                });
+
+                connection.on('plan:updated', (event) => {
+                    console.log('Plan Updated:', event);
+                    addNarration(`� Plan updated`, 'plan');
+                });
+
+                connection.on('timeline:log', (event) => {
+                    console.log('Timeline:', event);
+                    const type = event.kind === 'error' ? 'error' : 'plan';
+                    addNarration(`📊 ${event.message}`, type);
+                });
+
+                connection.onreconnected(() => {
+                    updateStatus(true);
+                    addNarration('🔄 Reconnected to Agent Hub');
+                });
+
+                connection.onclose(() => {
+                    updateStatus(false);
+                    addNarration('🔌 Disconnected from Agent Hub', 'error');
+                });
+
+                await connection.start();
+                updateStatus(true);
+                addNarration('🔌 Connected to Agent Hub');
+                authStatus.textContent = tokenInput.value?.trim() ? 'Signed in (token set)' : 'Anonymous connection';
+
+            } catch (err) {
+                console.error('Connection failed:', err);
+                updateStatus(false);
+                addNarration(`❌ Connection failed: ${err.message}`, 'error');
+                if (!tokenInput.value?.trim()) {
+                    authStatus.textContent = 'Not signed in (token missing)';
+                }
+            }
+        }
+
+        startBtn.addEventListener('click', async () => {
+            const goal = goalInput.value.trim();
+            if (!goal) {
+                alert('Please enter a goal for the agent');
+                return;
+            }
+
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('Not connected to Agent Hub. Trying to reconnect...');
+                await connectToHub();
+                return;
+            }
+
+            try {
+                clearNarration();
+                filesDiv.innerHTML = '<p style="color: #666; font-style: italic;">No files generated yet</p>';
+
+                addNarration(`🎯 Starting agent with goal: ${goal}`, 'plan');
+
+                const headers = { 'Content-Type': 'application/json' };
+                const t = tokenInput.value?.trim();
+                if (t && t.length > 0) headers['Authorization'] = `Bearer ${t}`;
+
+                // Step 1: Create a chat
+                const chatResponse = await fetch(`${getApiBase()}/api/chat/create`, {
+                    method: 'POST',
+                    headers
+                });
+
+                if (!chatResponse.ok) {
+                    throw new Error(`Failed to create chat: HTTP ${chatResponse.status}`);
+                }
+
+                const chatData = await chatResponse.json();
+                currentRunId = chatData.chatGuid; // Use chat GUID as run ID
+
+                addNarration(`💬 Chat created: ${currentRunId}`, 'plan');
+
+                // Step 2: Join the chat group to receive events
+                try {
+                    await connection.invoke('SubscribeToChat', currentRunId);
+                    addNarration(`� Subscribed to chat events`, 'plan');
+                } catch (err) {
+                    console.warn('Failed to subscribe to chat, events may not arrive:', err);
+                }
+
+                // Step 3: Start the agent
+                const agentResponse = await fetch(`${getApiBase()}/api/agent/chat/${currentRunId}`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ prompt: goal })
+                });
+
+                if (!agentResponse.ok) {
+                    throw new Error(`HTTP ${agentResponse.status}: ${await agentResponse.text()}`);
+                }
+
+                addNarration('⏳ Agent is planning approach...', 'plan');
+
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+
+            } catch (err) {
+                console.error('Failed to start run:', err);
+                addNarration(`❌ Failed to start: ${err.message}`, 'error');
+            }
+        });
+
+        stopBtn.addEventListener('click', async () => {
+            if (currentRunId && connection) {
+                try {
+                    // Cancel the agent run
+                    const headers = { 'Content-Type': 'application/json' };
+                    const t = tokenInput.value?.trim();
+                    if (t && t.length > 0) headers['Authorization'] = `Bearer ${t}`;
+
+                    await fetch(`${getApiBase()}/api/agent/chat/${currentRunId}/cancel`, {
+                        method: 'POST',
+                        headers
+                    });
+
+                    // Unsubscribe from chat events
+                    await connection.invoke('UnsubscribeFromChat', currentRunId);
+                    addNarration('⏹️ Agent run cancelled', 'error');
+                } catch (err) {
+                    console.error('Failed to stop:', err);
+                    addNarration('⚠️ Failed to cancel run', 'error');
+                }
+            }
+
+            currentRunId = null;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
+
+        // Approval handlers (currently not used by agent system)
+        approveBtn.addEventListener('click', async () => {
+            approvalBar.style.display = 'none';
+            addNarration('✅ Approval feature not yet implemented in agent system', 'plan');
+        });
+
+        denyBtn.addEventListener('click', async () => {
+            approvalBar.style.display = 'none';
+            addNarration('🚫 Approval feature not yet implemented in agent system', 'plan');
+        });
+
+        loginBtn.addEventListener('click', async () => {
+            const u = usernameInput.value.trim();
+            const p = passwordInput.value.trim();
+            if (!u || !p) {
+                alert('Enter username and password');
+                return;
+            }
+            try {
+                const resp = await fetch(`${getApiBase()}/api/identity/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: u, password: p })
+                });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                tokenInput.value = data.token;
+                authStatus.textContent = 'Signed in (token received)';
+                addNarration('🔑 Signed in, token acquired');
+                // Reconnect hub with token if not connected
+                try {
+                    if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                        await connectToHub();
+                    }
+                } catch { }
+            } catch (e) {
+                console.error('Login failed', e);
+                authStatus.textContent = 'Sign-in failed';
+                addNarration(`❌ Sign-in failed: ${e.message}`, 'error');
+            }
+        });
+
+        // Initialize
+        // Try to prefill settings from session if present
+        try {
+            const saved = sessionStorage.getItem('agent:token');
+            if (saved) tokenInput.value = saved;
+            const savedApi = sessionStorage.getItem('agent:api');
+            apiBaseInput.value = savedApi || window.location.origin;
+        } catch { }
+        
+        // Show welcome message
+        addNarration('👋 Test console initialized. Configure API settings and start testing!', 'plan');
+        
+        connectToHub();
+
+        // Persist token on change
+        tokenInput.addEventListener('input', () => {
+            try { sessionStorage.setItem('agent:token', tokenInput.value.trim()); } catch { }
+        });
+
+        // Persist API base on change
+        apiBaseInput.addEventListener('input', () => {
+            try { sessionStorage.setItem('agent:api', apiBaseInput.value.trim()); } catch { }
+        });
+    </script>
+</body>
+</html>

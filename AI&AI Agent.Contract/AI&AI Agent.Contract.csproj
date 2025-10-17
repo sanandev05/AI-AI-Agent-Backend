@@ -11,4 +11,8 @@
     <ProjectReference Include="..\AI&amp;AI Agent.Domain\AI&amp;AI Agent.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.65.0" />
+  </ItemGroup>
+
 </Project>

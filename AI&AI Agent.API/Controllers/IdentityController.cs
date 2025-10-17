@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace AI_AI_Agent.API.Controllers
 {
@@ -29,13 +31,23 @@ namespace AI_AI_Agent.API.Controllers
             _logger = logger;
         }
 
-        [HttpPost("register")]
+    [AllowAnonymous]
+    [HttpPost("register")]
         public async Task<IActionResult> RegisterAsync([FromBody] RegisterDto input, string? returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            if (input is null || string.IsNullOrWhiteSpace(input.Email) || string.IsNullOrWhiteSpace(input.Password))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Email and password are required."
+                });
+            }
 
             var user = new IdentityUser { UserName = input.Email, Email = input.Email };
             var result = await _userManager.CreateAsync(user, input.Password);
@@ -63,7 +75,8 @@ namespace AI_AI_Agent.API.Controllers
             });
         }
 
-        [HttpPost("login")]
+    [AllowAnonymous]
+    [HttpPost("login")]
         public async Task<IActionResult> SignInAsync(
     [FromBody] SignInDto signInDto,
     [FromServices] JwtTokenGenerator tokenGen)
@@ -75,6 +88,11 @@ namespace AI_AI_Agent.API.Controllers
                     success = false,
                     errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
                 });
+            }
+
+            if (signInDto is null || string.IsNullOrWhiteSpace(signInDto.Email) || string.IsNullOrWhiteSpace(signInDto.Password))
+            {
+                return BadRequest(new { success = false, message = "Email and password are required." });
             }
 
             var user = await _userManager.FindByEmailAsync(signInDto.Email);
@@ -121,6 +139,24 @@ namespace AI_AI_Agent.API.Controllers
             var result = await _userManager.ConfirmEmailAsync(user, code);
 
             return result.Succeeded ? Ok("Email confirmed successfully.") : BadRequest("Error confirming email.");
+        }
+
+        // Diagnostic: whoami endpoint to inspect claims and help debug 401s
+        [Authorize]
+        [HttpGet("me")]
+        public IActionResult Me()
+        {
+            var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+            var nameId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var subject = User.FindFirst("sub")?.Value;
+            return Ok(new
+            {
+                authenticated = User.Identity?.IsAuthenticated ?? false,
+                nameIdentifier = nameId,
+                sub = subject,
+                name = User.Identity?.Name,
+                claims
+            });
         }
     }
 }

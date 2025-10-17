@@ -1,4 +1,7 @@
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AI_AI_Agent.Domain.Agents
@@ -34,14 +37,31 @@ Plan:
 
         public async Task<string> GeneratePlanAsync(string goal)
         {
-            var function = _kernel.CreateFunctionFromPrompt(PlannerPrompt);
-            var result = await _kernel.InvokeAsync(function, new() { { "input", goal } });
-            return result.GetValue<string>().Trim();
+            try
+            {
+                // Ensure there is at least one chat completion service available
+                var hasChat = _kernel.GetAllServices<IChatCompletionService>().Any();
+                if (!hasChat)
+                {
+                    return "No chat backend configured. Please configure Agent:Backends or OpenAI:ApiKey.";
+                }
+
+                var function = _kernel.CreateFunctionFromPrompt(PlannerPrompt);
+                var result = await _kernel.InvokeAsync(function, new() { { "input", goal } });
+                return result.GetValue<string>()?.Trim() ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                // Return a friendly message instead of propagating the exception
+                return $"Planner error: {ex.Message}";
+            }
         }
 
         public async Task<string> AdaptPlanAsync(string originalGoal, string currentPlan, string feedback)
         {
-            var adaptationPrompt = @$"
+            try
+            {
+                var adaptationPrompt = @$"
 You are a planner for an AI agent. The agent failed to execute the following plan:
 {currentPlan}
 
@@ -53,9 +73,14 @@ Please generate a new plan to achieve the original goal. The new plan must be a 
 Original Goal: {{$goal}}
 New Plan:
 ";
-            var function = _kernel.CreateFunctionFromPrompt(adaptationPrompt);
-            var result = await _kernel.InvokeAsync(function, new() { { "goal", originalGoal } });
-            return result.GetValue<string>().Trim();
+                var function = _kernel.CreateFunctionFromPrompt(adaptationPrompt);
+                var result = await _kernel.InvokeAsync(function, new() { { "goal", originalGoal } });
+                return result.GetValue<string>()?.Trim() ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                return $"Planner error: {ex.Message}";
+            }
         }
     }
 }

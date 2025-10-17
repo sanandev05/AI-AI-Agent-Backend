@@ -15,5 +15,7 @@ namespace AI_AI_Agent.Domain.Entities
 
         public Guid ChatId { get; set; }
 
+        public virtual ICollection<ToolRun> ToolRuns { get; set; } = new List<ToolRun>();
+        public virtual ICollection<Embedding> Embeddings { get; set; } = new List<Embedding>();
     }
 }

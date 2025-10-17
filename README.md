@@ -1,121 +1,179 @@
-# GeneralAgent - Autonomous Agent Platform (.NET 8)
+# AI&AI Agent Backend (.NET 8)
 
-This project is a .NET 8 implementation of a general-purpose autonomous agent platform inspired by Manus AI. It uses Semantic Kernel for planning and tool orchestration, allowing users to submit complex, natural-language goals (e.g., "Analyze Tesla revenue reports and give me a DOCX") and receive structured artifacts like DOCX, PDF, and CSV files.
+Autonomous multi-tool agent backend inspired by Manus AI. Built with ASP.NET Core 8, Semantic Kernel, Playwright, SignalR, and a growing toolset for research, browsing, analysis, and artifact generation (DOCX/PDF/PPTX/PNG/ICS/EML).
 
-The agent operates on a ReAct (Reason-Act) loop, where it creates a plan, executes tools, observes the results, and iterates until the goal is achieved or constraints are met.
+The agent runs a sequential plan/act loop, emits live events, and saves artifacts in a workspace folder served by the Files API.
 
-## Features
+## Architecture
 
-- **Multi-Step Planning:** Decomposes complex user prompts into a sequence of executable steps.
-- **Extensible Tool Registry:** A collection of powerful, sandboxed tools for web interaction, file manipulation, data analysis, and content generation.
-- **Multi-LLM Support:** Route tasks to different AI models (OpenAI, Gemini, Anthropic) based on cost and capability.
-- **Background Job Processing:** Uses Hangfire to run complex jobs asynchronously.
-- **Artifact Generation:** Produces downloadable DOCX, PDF, CSV, and PNG files.
-- **Safety First:** Risky tools like code execution and Playwright are disabled by default and must be explicitly enabled.
+- API: ASP.NET Core Web API + SignalR hub for real-time events
+- Application/Domain: Agent loop, planning, orchestration, contracts
+- Infrastructure: Tools (WebBrowse, ResearchSummarize, DataAnalyze, ChartCreate, PdfCreate, PptxCreate, DocxRead/Write, Csv/Excel, Email, Calendar, ProductCompare, Tasks, Translate), services (URL safety, approvals)
+- Persistence: EF Core (AIDbContext) for identity and chat storage
+- Auth: JWT Bearer (single scheme) + ASP.NET Identity users
 
-## Quickstart
+## Getting Started
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell) (Core or Windows)
-- (Optional) [Node.js](https://nodejs.org/) for Playwright tool.
-- (Optional) An API key for OpenAI, Google Gemini, or Anthropic.
+- .NET 8 SDK
+- Windows PowerShell (v5+)
+- Optional: API keys for OpenAI and/or Google Gemini
 
-### 1. Environment Variables
+### Configure appsettings
 
-You must provide an API key for at least one of the supported LLM providers. Set it as an environment variable before running the bootstrap script.
+Edit `AI&AI Agent.API/appsettings.Development.json` and set at minimum:
 
-**Example (PowerShell):**
-```powershell
-$env:OPENAI_API_KEY="sk-..."
-# or
-$env:GEMINI_API_KEY="AIza..."
-# or
-$env:ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-You can also set optional environment variables to control model selection and feature flags:
-```powershell
-$env:MODEL_PLANNER="gpt-4o-mini"
-$env:MODEL_SYNTH="gpt-4o"
-$env:PLAYWRIGHT_ENABLE="true"
-$env:CODE_RUN_ENABLE="true"
-```
-
-### 2. Bootstrap the Solution
-
-Open a new PowerShell terminal in an **empty directory** and run the bootstrap script. This will scaffold the entire solution, install dependencies, and build the project.
-
-```powershell
-# Ensure you are in an empty folder
-# Save the bootstrap.ps1 content from the prompt into a file named bootstrap.ps1
-./bootstrap.ps1
-```
-
-### 3. Run the API
-
-Once the bootstrap is complete, you can run the API server.
-
-```powershell
-cd src/Api
-dotnet run
-```
-The API will be available at `http://localhost:5079`.
-
-### 4. Interact with the API
-
-Use a tool like `curl` or an API client to interact with the agent.
-
-**A) Start a Job:**
-
-```bash
-curl -X POST http://localhost:5079/api/jobs/run -H "Content-Type: application/json" -d '{
-  "prompt": "Analyze the latest quarterly revenue report for Microsoft (MSFT) and generate a 1-page DOCX summary with a revenue chart.",
-  "constraints": {
-    "maxIterations": 10,
-    "budgetUsd": 0.25,
-    "domainHints": ["finance", "webscrape"]
+```json
+{
+  "Jwt": {
+    "Key": "<32+ char random secret>",
+    "Issuer": "AI-Agent",
+    "Audience": "AI-Agent-Clients",
+    "ExpireMinutes": 120
   },
-  "deliverables": ["docx"]
-}'
-```
-This will return a `jobId`.
-
-**B) Check Job Status:**
-
-```bash
-curl http://localhost:5079/api/jobs/{your-job-id}
-```
-Poll this endpoint until the status is `Succeeded` or `Failed`. A successful job will include artifact details with a `fileId`.
-
-**C) Download the Artifact:**
-
-```bash
-curl -o report.docx http://localhost:5079/api/files/{your-file-id}
+  "OpenAI": { "ApiKey": "sk-...", "ModelId": "gpt-4o" },
+  "Google": { "ApiKey": "AIza..." },
+  "Agent": {
+    "WorkspacePath": "workspace",
+    "Backends": {
+      "OpenAI:Default": { "Provider": "OpenAI", "ModelId": "gpt-4o", "ApiKey": "sk-..." }
+    }
+  }
+}
 ```
 
-## Tool Catalog
+### Build and Run (Dev)
 
-The agent has access to the following tools. You can get a live list from the `/api/tools` endpoint.
+```powershell
+dotnet build "AI&AI Agent Backend.sln" -v:m
+dotnet run --project "AI&AI Agent.API/AI&AI Agent.API.csproj"
+```
 
-| Tool                  | Description                                                                 |
-| --------------------- | --------------------------------------------------------------------------- |
-| `web.search`          | Searches the web for a query.                                               |
-| `web.fetch`           | Fetches the content of a URL.                                               |
-| `web.playwright`      | Runs a Playwright script for dynamic sites (disabled by default).           |
-| `file.parse`          | Parses text from various file formats (PDF, DOCX, HTML, CSV).               |
-| `data.extract`        | Extracts structured JSON data from text based on a schema.                  |
-| `data.tabulate`       | Creates a CSV file from structured data.                                    |
-| `report.compose`      | Converts Markdown text into a DOCX or PDF document.                         |
-| `viz.chart`           | Generates a PNG chart (line, bar, pie) from data.                           |
-| `code.run.csharp`     | Executes a C# snippet in a sandbox (disabled by default).                   |
-| `util.merge`          | Merges multiple text blocks into a single Markdown document.                |
-| `cite.collect`        | Collects and formats a list of source URLs.                                 |
+Defaults: Swagger at /swagger (dev), SignalR hub at /hubs/agent-events, Files API at /api/files.
+
+## Authentication
+
+1) Register and login to get a JWT:
+
+- POST `/api/identity/register` { email, password, isPersistent }
+- POST `/api/identity/login` { email, password } → { token }
+
+2) Send `Authorization: Bearer <token>` on all protected endpoints.
+
+Diagnostics: GET `/api/diagnostics/jwt` shows whether JWT config is present (dev only).
+
+## Core Endpoints
+
+- Chat
+  - POST `/api/chat/create` → create chat
+  - GET `/api/chat/list` → list chats
+  - GET `/api/chat/{uid}` → get chat by id
+  - PUT `/api/chat/{uid}/rename` { newTitle }
+  - DELETE `/api/chat/{uid}`
+  - POST `/api/chat/stream` SSE streaming; body: `ChatRequestDto { chatId, message, model, imageUrls? }`
+  - POST `/api/chat/web-search` SSE streaming; body: `WebSearchRequestDto { chatId, query }`
+
+- Agent loop (SignalR-driven)
+  - POST `/api/agent/chat/{chatId}/cancel` → stop a running plan
+  - POST `/api/agent/chat/{chatId}` { prompt } → start agent turn (returns 202); subscribe to hub for events
+
+- Files
+  - GET `/api/files` → list artifacts
+  - GET `/api/files/{fileName}` → download .docx/.png/.pdf/.pptx/.eml/.ics
+  - DELETE `/api/files/{fileName}` → delete artifact
+
+- Approvals (for sensitive actions like EmailSend)
+  - GET `/api/approvals?status=Pending|Approved|Denied`
+  - POST `/api/approvals/{id}/approve`
+  - POST `/api/approvals/{id}/deny`
+
+## SignalR Events (hub: /hubs/agent-events)
+
+Clients should call `SubscribeToChat(chatId)` after connecting. Events emitted to the chat group:
+
+- `step:start` { chatId, step, userPrompt, historyCount }
+- `tool:start` { chatId, step, tool, args }
+- `tool:end` { chatId, step, tool, result }
+- `file:created` { chatId, step, fileName, downloadUrl, sizeBytes }
+- `plan:created` { chatId, plan }
+- `plan:updated` { chatId, plan }
+- `final:answer` { chatId, step, text }
+
+Chat streaming via SSE ends with a JSON chunk: `{ "type":"done" }` and includes a final `usage` event from the chat service with token counts.
+
+## Tool Catalog (Implemented)
+
+- WebBrowse: realistic browsing with action sequences (wait/type/click/press/submit), stealth, and raw HTTP fallback
+- ResearchSummarize: multi-URL aggregation + extractive summary; optional DOCX export
+- PdfRead, DocxRead, CsvAnalyze, ExcelRead: parse/ingest content
+- DataAnalyze: stats, trend slope, anomaly detection
+- ChartCreate: PNG charts via SkiaSharp
+- PdfCreate: generate PDFs (iText7)
+- PptxCreate: simple PPTX (title + bullets)
+- DocxCreate: write DOCX text reports
+- WebWatch: website change tracker
+- ProductCompare: heuristic price/rating extraction and tiering
+- Translate: LLM-based translation
+- Tasks: to-do add/list/complete/delete (workspace JSON)
+- CalendarCreate/List: export ICS and list
+- EmailDraft/EmailSend: draft creates approval; send requires approval; writes .eml to workspace
+
+Artifacts are saved under `workspace/` and available through the Files API. Supported types: .docx, .png, .pdf, .pptx, .eml, .ics
+
+## Usage Examples
+
+1) Create a chat and stream a response
+
+```http
+POST /api/chat/create
+Authorization: Bearer <jwt>
+
+{}
+```
+
+```http
+POST /api/chat/stream
+Accept: text/event-stream
+Authorization: Bearer <jwt>
+Content-Type: application/json
+
+{ "chatId": "<guid>", "message": "Compare iPhone 15 vs Galaxy S24 and create a 1-page summary." }
+```
+
+2) Ask the agent loop to perform a goal and watch SignalR
+
+```http
+POST /api/agent/chat/{chatId}
+Authorization: Bearer <jwt>
+Content-Type: application/json
+
+{ "prompt": "Research PLC basics, summarize, and export a PPTX with bullets." }
+```
+
+3) List and download artifacts
+
+```http
+GET /api/files
+GET /api/files/<fileName>
+```
+
+## Configuration Notes
+
+- Backends: set `Agent:Backends` with one or more entries. Supported Provider values: `OpenAI`, `AzureOpenAI`. If none valid, falls back to `OpenAI:ApiKey`.
+- URL Safety: outbound browsing is enforced by a policy service. Denied URLs are blocked with an explanation.
+- JWT Key: must be at least 32 bytes (HS256). The app validates at startup.
+
+## Roadmap
+
+- Per-bullet citation mapping in ResearchSummarize and two-pass synthesis
+- Richer charts (multi-series) and embedding in PPTX
+- Media (video/podcast) transcript ingestion and summarization
+- Stronger retries/timeouts and parameter validation
 
 ## Troubleshooting
 
-- **403 Forbidden from LLM Provider:** Your API key is likely invalid, expired, or lacks the correct permissions for the model you are trying to use.
-- **PDF Parsing Fails:** `PdfPig` is robust but may struggle with complex layouts or scanned documents. The agent is designed to gracefully skip sources it cannot parse.
-- **Job Fails with Max Iterations:** The agent could not complete the task within the allowed number of steps. Try increasing `maxIterations` or simplifying the prompt.
-- **Playwright/Code Runner Disabled:** These tools are disabled by default for security. You must set the `PLAYWRIGHT_ENABLE=true` or `CODE_RUN_ENABLE=true` environment variable to use them.
+- 401/403: Ensure you’re sending `Authorization: Bearer <token>`. Visit `/api/identity/me` to inspect claims.
+- Swagger auth: In Swagger UI, click Authorize and paste ONLY the raw JWT (no "Bearer " prefix).
+- Playwright errors or bot checks: The tool auto-falls back to raw HTTP when possible; some sites may still block scraping.
+- Missing files: Artifacts are written to `workspace/` in the API process directory; ensure the app has write permissions.

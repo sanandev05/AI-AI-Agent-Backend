@@ -1,0 +1,297 @@
+### AI Agent Testing Guide
+### Use this file with VS Code REST Client extension or similar tools
+
+@baseUrl = https://localhost:7210
+@httpUrl = http://localhost:5216
+
+### Variables (update these after each step)
+@token = YOUR_JWT_TOKEN_HERE
+@chatId = YOUR_CHAT_ID_HERE
+
+########################################
+# 1. AUTHENTICATION
+########################################
+
+### Register New User
+POST {{baseUrl}}/api/identity/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!",
+  "isPersistent": true
+}
+
+### Login (Get JWT Token)
+# @name login
+POST {{baseUrl}}/api/identity/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!"
+}
+
+### Test JWT Authentication
+GET {{baseUrl}}/api/identity/me
+Authorization: Bearer {{token}}
+
+### Diagnostics - Check JWT Config
+GET {{baseUrl}}/api/diagnostics/jwt
+
+########################################
+# 2. CHAT MANAGEMENT
+########################################
+
+### Create New Chat
+# @name createChat
+POST {{baseUrl}}/api/chat/create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### List All Chats
+GET {{baseUrl}}/api/chat/list
+Authorization: Bearer {{token}}
+
+### Get Chat by ID
+GET {{baseUrl}}/api/chat/{{chatId}}
+Authorization: Bearer {{token}}
+
+### Rename Chat
+PUT {{baseUrl}}/api/chat/{{chatId}}/rename
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "newTitle": "My Test Chat"
+}
+
+### Delete Chat
+DELETE {{baseUrl}}/api/chat/{{chatId}}
+Authorization: Bearer {{token}}
+
+########################################
+# 3. CHAT STREAMING (SSE)
+########################################
+
+### Stream Chat Response (Simple)
+POST {{baseUrl}}/api/chat/stream
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+  "chatId": "{{chatId}}",
+  "message": "What is 2+2? Explain briefly.",
+  "model": "gpt-4o"
+}
+
+### Stream Chat with Complex Task
+POST {{baseUrl}}/api/chat/stream
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+  "chatId": "{{chatId}}",
+  "message": "Research the benefits of renewable energy and create a summary document.",
+  "model": "gpt-4o"
+}
+
+### Web Search Stream
+POST {{baseUrl}}/api/chat/web-search
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+Content-Type: application/json
+
+{
+  "chatId": "{{chatId}}",
+  "query": "latest AI developments 2025"
+}
+
+########################################
+# 4. AGENT EXECUTION (SignalR Events)
+########################################
+
+### Start Agent with Simple Task
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Calculate 123 * 456 and explain the result"
+}
+
+### Start Agent with File Creation
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Create a markdown file called 'test-summary.md' with a summary of AI basics"
+}
+
+### Start Agent with Research Task
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Research climate change basics, summarize the key points, and create a DOCX report"
+}
+
+### Start Agent with Data Analysis
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Analyze sample sales data and create a chart showing trends"
+}
+
+### Start Agent with Product Comparison
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Compare iPhone 15 vs Samsung Galaxy S24 and create a comparison table"
+}
+
+### Start Agent with Email Draft
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Draft a professional email to schedule a meeting next week"
+}
+
+### Cancel Running Agent
+POST {{baseUrl}}/api/agent/chat/{{chatId}}/cancel
+Authorization: Bearer {{token}}
+
+########################################
+# 5. FILES & ARTIFACTS
+########################################
+
+### List All Files
+GET {{baseUrl}}/api/files
+Authorization: Bearer {{token}}
+
+### Download Specific File (replace filename)
+GET {{baseUrl}}/api/files/test-summary.md
+Authorization: Bearer {{token}}
+
+### Delete File
+DELETE {{baseUrl}}/api/files/test-summary.md
+Authorization: Bearer {{token}}
+
+########################################
+# 6. APPROVALS (For Sensitive Actions)
+########################################
+
+### List Pending Approvals
+GET {{baseUrl}}/api/approvals?status=Pending
+Authorization: Bearer {{token}}
+
+### List All Approvals
+GET {{baseUrl}}/api/approvals
+Authorization: Bearer {{token}}
+
+### Approve an Action (replace {id})
+POST {{baseUrl}}/api/approvals/{id}/approve
+Authorization: Bearer {{token}}
+
+### Deny an Action (replace {id})
+POST {{baseUrl}}/api/approvals/{id}/deny
+Authorization: Bearer {{token}}
+
+########################################
+# 7. PHASE 5 FEATURES TESTING
+########################################
+
+### Test Workspace Management
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Create a new Python data science workspace with a sample analysis script"
+}
+
+### Test Project Understanding
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Analyze the project structure and provide architectural insights"
+}
+
+### Test Code Interpreter
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Execute this Python code: print('Hello from Code Interpreter'); result = 10 * 5; print(f'Result: {result}')"
+}
+
+### Test Knowledge Retrieval
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Search for information about machine learning algorithms and verify the facts"
+}
+
+### Test Multi-Modal (Document Analysis)
+POST {{baseUrl}}/api/agent/chat/{{chatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prompt": "Analyze any markdown files in the workspace and extract key information"
+}
+
+########################################
+# 8. RUN MONITORING
+########################################
+
+### Note: For run monitoring, open in browser:
+### https://localhost:7210/run-monitor.html
+
+########################################
+# TESTING TIPS
+########################################
+
+# 1. Always get a token first (step 1)
+# 2. Create a chat (step 2) and copy the chatId
+# 3. Use /api/chat/stream for simple Q&A
+# 4. Use /api/agent/chat/{chatId} for complex tasks with tools
+# 5. Monitor events in test-agent.html for real-time feedback
+# 6. Check /api/files for created artifacts
+# 7. Use SignalR hub (/hubs/agent-events) for production integration
+
+########################################
+# COMMON TEST SCENARIOS
+########################################
+
+### Scenario 1: Simple Calculation
+# Use: /api/chat/stream with "What is 25 * 8?"
+
+### Scenario 2: Document Creation
+# Use: /api/agent/chat/{chatId} with "Create a project plan document"
+
+### Scenario 3: Research & Export
+# Use: /api/agent/chat/{chatId} with "Research AI trends and export to PPTX"
+
+### Scenario 4: Data Analysis
+# Use: /api/agent/chat/{chatId} with "Analyze sales data and create charts"
+
+### Scenario 5: Multi-Tool Workflow
+# Use: /api/agent/chat/{chatId} with "Research topic, create summary, translate to Spanish, export to PDF"

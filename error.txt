@@ -1,78 +1,24 @@
-[Backend Error Text]: data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
-
-
-error @ intercept-console-error.ts:44
-GitHubCopilotInterface.useMemo[chatAPI] @ page.tsx:930
-await in GitHubCopilotInterface.useMemo[chatAPI]
-GitHubCopilotInterface.useCallback[sendStreamingMessage] @ page.tsx:1756
-GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2007
-GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
-GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
-executeDispatch @ react-dom-client.development.js:16970
-runWithFiberInDEV @ react-dom-client.development.js:871
-processDispatchQueue @ react-dom-client.development.js:17020
-(anonymous) @ react-dom-client.development.js:17621
-batchedUpdates$1 @ react-dom-client.development.js:3311
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
-dispatchEvent @ react-dom-client.development.js:21357
-dispatchDiscreteEvent @ react-dom-client.development.js:21325
-page.tsx:939 [Full streaming error]: HTTP 500 : data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
-
-
-error @ intercept-console-error.ts:44
-GitHubCopilotInterface.useMemo[chatAPI] @ page.tsx:939
-await in GitHubCopilotInterface.useMemo[chatAPI]
-GitHubCopilotInterface.useCallback[sendStreamingMessage] @ page.tsx:1756
-GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2007
-GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
-GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
-executeDispatch @ react-dom-client.development.js:16970
-runWithFiberInDEV @ react-dom-client.development.js:871
-processDispatchQueue @ react-dom-client.development.js:17020
-(anonymous) @ react-dom-client.development.js:17621
-batchedUpdates$1 @ react-dom-client.development.js:3311
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
-dispatchEvent @ react-dom-client.development.js:21357
-dispatchDiscreteEvent @ react-dom-client.development.js:21325
-page.tsx:1075 Error in streaming: Error: Server error: data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
-
-
-    at GitHubCopilotInterface.useMemo[chatAPI] [as sendStreamingMessage] (page.tsx:954:23)
-    at async GitHubCopilotInterface.useCallback[sendStreamingMessage] (page.tsx:1756:12)
-    at async GitHubCopilotInterface.useCallback[sendMessageWithImage] (page.tsx:2007:11)
-    at async GitHubCopilotInterface.useCallback[sendMessage] (page.tsx:2042:5)
-error @ intercept-console-error.ts:44
-GitHubCopilotInterface.useMemo[chatAPI] @ page.tsx:1075
-await in GitHubCopilotInterface.useMemo[chatAPI]
-GitHubCopilotInterface.useCallback[sendStreamingMessage] @ page.tsx:1756
-GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2007
-GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
-GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
-executeDispatch @ react-dom-client.development.js:16970
-runWithFiberInDEV @ react-dom-client.development.js:871
-processDispatchQueue @ react-dom-client.development.js:17020
-(anonymous) @ react-dom-client.development.js:17621
-batchedUpdates$1 @ react-dom-client.development.js:3311
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
-dispatchEvent @ react-dom-client.development.js:21357
-dispatchDiscreteEvent @ react-dom-client.development.js:21325
-page.tsx:2019 [sendMessageWithImage] Failed Error: Server error: data: {"type":"error","message":"Internal server error: Response status code does not indicate success: 403 (Forbidden)."}
-
-
-    at GitHubCopilotInterface.useMemo[chatAPI] [as sendStreamingMessage] (page.tsx:954:23)
-    at async GitHubCopilotInterface.useCallback[sendStreamingMessage] (page.tsx:1756:12)
-    at async GitHubCopilotInterface.useCallback[sendMessageWithImage] (page.tsx:2007:11)
-    at async GitHubCopilotInterface.useCallback[sendMessage] (page.tsx:2042:5)
-error @ intercept-console-error.ts:44
-GitHubCopilotInterface.useCallback[sendMessageWithImage] @ page.tsx:2019
-await in GitHubCopilotInterface.useCallback[sendMessageWithImage]
-GitHubCopilotInterface.useCallback[sendMessage] @ page.tsx:2042
-GitHubCopilotInterface.useCallback[handleKeyDown] @ page.tsx:2048
-executeDispatch @ react-dom-client.development.js:16970
-runWithFiberInDEV @ react-dom-client.development.js:871
-processDispatchQueue @ react-dom-client.development.js:17020
-(anonymous) @ react-dom-client.development.js:17621
-batchedUpdates$1 @ react-dom-client.development.js:3311
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
-dispatchEvent @ react-dom-client.development.js:21357
-dispatchDiscreteEvent @ react-dom-client.development.js:21325
+Severity	Code	Description	Project	File	Line	Suppression State	Details
+Error (active)	CS0246	The type or namespace name 'ChatMessageContent' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Domain	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Domain\Memory\IChatHistory.cs	10		
+Error (active)	CS0246	The type or namespace name 'IChatResult' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Application	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Application\Agent\Routing\Backends\AzureOpenAIChatBackend.cs	19		
+Error (active)	CS0246	The type or namespace name 'IChatResult' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Application	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Application\Agent\Routing\IChatBackend.cs	11		
+Error (active)	CS0246	The type or namespace name 'FunctionCall' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Application	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Application\Agent\ToolCallParser.cs	10		
+Error (active)	CS0246	The type or namespace name 'IChatResult' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Application	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Application\Agent\ToolCallParser.cs	10		
+Error (active)	CS0246	The type or namespace name 'IChatResult' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Application	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Application\Agent\ToolCallParser.cs	15		
+Error (active)	CS0246	The type or namespace name 'ToolCallResult' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Application	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Application\Agent\ToolCallParser.cs	20		
+Error (active)	CS0234	The type or namespace name 'Agent' does not exist in the namespace 'AI_AI_Agent.Application' (are you missing an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Storage\InMemoryChatStore.cs	1		
+Error (active)	CS0246	The type or namespace name 'IChatStore' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Storage\InMemoryChatStore.cs	9		
+Error (active)	CS0234	The type or namespace name 'Agent' does not exist in the namespace 'AI_AI_Agent.Application' (are you missing an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\ToolBusSignalR.cs	1		
+Error (active)	CS0234	The type or namespace name 'API' does not exist in the namespace 'AI_AI_Agent' (are you missing an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\ToolBusSignalR.cs	3		
+Error (active)	CS0246	The type or namespace name 'IToolBus' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\ToolBusSignalR.cs	9		
+Error (active)	CS0246	The type or namespace name 'AgentEventsHub' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\ToolBusSignalR.cs	11		
+Error (active)	CS0246	The type or namespace name 'AgentEventsHub' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\ToolBusSignalR.cs	13		
+Error (active)	CS0234	The type or namespace name 'Agent' does not exist in the namespace 'AI_AI_Agent.Application' (are you missing an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\WebBrowseTool.cs	1		
+Error (active)	CS0246	The type or namespace name 'ITool' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\WebBrowseTool.cs	9		
+Error (active)	CS0234	The type or namespace name 'Agent' does not exist in the namespace 'AI_AI_Agent.Application' (are you missing an assembly reference?)	AI&AI Agent.API	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.API\Controllers\AgentController.cs	4		
+Error (active)	CS0246	The type or namespace name 'AgentLoop' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.API	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.API\Controllers\AgentController.cs	17		
+Error (active)	CS0246	The type or namespace name 'AgentLoop' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.API	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.API\Controllers\AgentController.cs	19		
+Error (active)	CS0234	The type or namespace name 'Agent' does not exist in the namespace 'AI_AI_Agent.Application' (are you missing an assembly reference?)	AI&AI Agent.API	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.API\Program.cs	12		
+Error (active)	CS0234	The type or namespace name 'Agent' does not exist in the namespace 'AI_AI_Agent.Application' (are you missing an assembly reference?)	AI&AI Agent.API	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.API\Program.cs	13		
+Error (active)	CS0234	The type or namespace name 'Agent' does not exist in the namespace 'AI_AI_Agent.Application' (are you missing an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\DocxCreateTool.cs	1		
+Error (active)	CS0246	The type or namespace name 'ITool' could not be found (are you missing a using directive or an assembly reference?)	AI&AI Agent.Infrastructure	C:\Users\Icomp\Desktop\Final Project\AI-AI-Agent-Backend\AI&AI Agent.Infrastructure\Tools\DocxCreateTool.cs	12		

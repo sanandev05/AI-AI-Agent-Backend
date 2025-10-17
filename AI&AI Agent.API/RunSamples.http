@@ -1,0 +1,15 @@
+### Start a sample run
+POST http://localhost:5216/tasks/demo/runs
+Content-Type: application/json
+
+{
+  "goal": "Research German public universities and IELTS requirement; take one screenshot; summarize EN+AZ; export a DOCX."
+}
+
+### Azerbaijan non-English smoke test (validates SearchAPI + Extract rotation)
+POST http://localhost:5216/tasks/demo/runs
+Content-Type: application/json
+
+{
+  "goal": "azərbaycan haqqında məlumat ver; bir ekran görüntüsü çək; yekunda .docx faylı hazırla"
+}

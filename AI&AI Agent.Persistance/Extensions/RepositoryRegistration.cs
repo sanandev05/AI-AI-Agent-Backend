@@ -10,6 +10,9 @@ namespace AI_AI_Agent.Persistance.Extensions
         {
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IChatRepository, ChatRepository>();
+            services.AddScoped<IRunRepository, RunRepository>();
+            services.AddScoped<IStepLogRepository, StepLogRepository>();
+            services.AddScoped<IArtifactRepository, ArtifactRepository>();
             return services;
         }
     }
